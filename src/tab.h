@@ -17,7 +17,6 @@ public:
 protected:
     QSize tabSizeHint(int index) const override;
     void paintEvent(QPaintEvent *event) override;
-    bool isVertical() const;
 };
 
 class TabWidget : public QTabWidget
@@ -25,7 +24,7 @@ class TabWidget : public QTabWidget
     Q_OBJECT
 public:
     explicit TabWidget(QWidget *parent = nullptr);
-    void setTabBarOrientation(Qt::Orientation orientation);
+    void setupSidebar();
 
 private:
     TabBar *customTabBar;

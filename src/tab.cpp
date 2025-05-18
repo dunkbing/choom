@@ -18,13 +18,8 @@ TabBar::TabBar(QWidget *parent) : QTabBar(parent)
 QSize TabBar::tabSizeHint(const int index) const
 {
     QSize size = QTabBar::tabSizeHint(index);
-
-    if (isVertical()) {
-        size.setWidth(200);
-        size.setHeight(40);
-        return size;
-    }
-
+    size.setWidth(200);
+    size.setHeight(40);
     return size;
 }
 
@@ -36,45 +31,32 @@ void TabBar::paintEvent(QPaintEvent *event)
     // draw each tab with custom styling
     for (int i = 0; i < count(); i++) {
         initStyleOption(&opt, i);
+        QRect rect = tabRect(i);
 
-        if (isVertical()) {
-            QRect rect = tabRect(i);
-
-            // Set background color based on selected state
-            if (i == currentIndex()) {
-                painter.fillRect(rect, QColor(60, 63, 77));  // Dark blue-gray when selected
-            } else {
-                painter.fillRect(rect, QColor(36, 38, 46));  // Darker background for unselected
-            }
-
-            // Draw icon
-            if (!tabIcon(i).isNull()) {
-                QIcon icon = tabIcon(i);
-                QRect iconRect = rect;
-                iconRect.setSize(QSize(16, 16));
-                iconRect.moveLeft(rect.left() + 10);
-                iconRect.moveTop(rect.top() + (rect.height() - 16) / 2);
-                icon.paint(&painter, iconRect);
-            }
-
-            // Draw text
-            QRect textRect = rect;
-            textRect.setLeft(rect.left() + 36);  // Leave space for icon
-
-            painter.setPen(i == currentIndex() ? Qt::white : QColor(200, 200, 200));
-            painter.drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, tabText(i));
-
-            // Don't use the default drawing
-            continue;
+        // Set background color based on selected state
+        if (i == currentIndex()) {
+            painter.fillRect(rect, QColor(60, 63, 77));  // Dark blue-gray when selected
+        } else {
+            painter.fillRect(rect, QColor(36, 38, 46));  // Darker background for unselected
         }
 
-        // Use default drawing for horizontal tabs
-        painter.drawControl(QStyle::CE_TabBarTab, opt);
-    }
-}
+        // Draw icon
+        if (!tabIcon(i).isNull()) {
+            QIcon icon = tabIcon(i);
+            QRect iconRect = rect;
+            iconRect.setSize(QSize(16, 16));
+            iconRect.moveLeft(rect.left() + 10);
+            iconRect.moveTop(rect.top() + (rect.height() - 16) / 2);
+            icon.paint(&painter, iconRect);
+        }
 
-bool TabBar::isVertical() const {
-    return shape() == QTabBar::RoundedWest || shape() == QTabBar::RoundedEast;
+        // Draw text
+        QRect textRect = rect;
+        textRect.setLeft(rect.left() + 36);  // Leave space for icon
+
+        painter.setPen(i == currentIndex() ? Qt::white : QColor(200, 200, 200));
+        painter.drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, tabText(i));
+    }
 }
 
 // CustomTabWidget implementation
@@ -87,27 +69,25 @@ TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
     setDocumentMode(true);
     setTabsClosable(true);
     setMovable(true);
+
+    // Set up the sidebar by default
+    setupSidebar();
 }
 
-void TabWidget::setTabBarOrientation(const Qt::Orientation orientation)
+void TabWidget::setupSidebar()
 {
-    if (orientation == Qt::Vertical) {
-        setTabPosition(West);
-        setStyleSheet(R"(
-            QTabWidget::pane {
-                border: none;
-                background: #24262e;
-            }
-            QTabBar::tab {
-                padding: 8px;
-                color: #cccccc;
-            }
-            QTabBar::tab:selected {
-                color: white;
-            }
-        )");
-    } else {
-        setTabPosition(North);
-        setStyleSheet("");
-    }
+    setTabPosition(West);
+    setStyleSheet(R"(
+        QTabWidget::pane {
+            border: none;
+            background: #24262e;
+        }
+        QTabBar::tab {
+            padding: 8px;
+            color: #cccccc;
+        }
+        QTabBar::tab:selected {
+            color: white;
+        }
+    )");
 }

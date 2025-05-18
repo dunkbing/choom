@@ -4,14 +4,13 @@
 #include <QMainWindow>
 #include <QWebEngineView>
 #include <QLineEdit>
-#include <QComboBox>
 #include <QVector>
 #include <QUrl>
 #include <QStyleOptionTab>
 #include <QPainter>
 #include <QPoint>
-
-#include "tab.h"
+#include <QVBoxLayout>
+#include <QStackedWidget>
 
 class CustomTitleBar;
 
@@ -35,24 +34,33 @@ private slots:
     void reload() const;
     void addNewTab(const QUrl &url = QUrl("https://www.google.com"));
     void closeTab(int index);
-    void changeTabOrientation(int orientation);
     void tabChanged(int index);
+    void tabClicked(int index);
 
 private:
-    TabWidget *tabWidget;
+    QStackedWidget *contentStack;
+    QVector<QWebEngineView*> webViews;
     QLineEdit *urlBar;
-    QToolBar *navigationBar;
-    QComboBox *tabOrientationSelector;
-    QAction *addTabAction;
+    QWidget *sidebarWidget;
+    QVBoxLayout *sidebarLayout;
+    QVBoxLayout *tabsLayout;
+    QWidget *tabsContainer;
+    QToolButton *backButton;
+    QToolButton *forwardButton;
+    QToolButton *reloadButton;
+    QToolButton *addTabButton;
     CustomTitleBar *titleBar;
-    int currentTabOrientation = Qt::Horizontal;
     bool isDragging = false;
     QPoint dragStartPosition;
+    int currentTabIndex = -1;
 
     void setupUI();
+    void setupSidebar();
     void setupIcons();
     void createWebView(const QUrl& url = QUrl("https://www.google.com"));
     QWebEngineView* currentWebView() const;
+    void updateTabButtons();
+    QToolButton* createTabButton(const QString& title, int index);
 };
 
 class CustomTitleBar : public QWidget
