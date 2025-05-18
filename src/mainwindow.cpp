@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "utils.h"
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QApplication>
@@ -7,54 +8,8 @@
 #include <QStylePainter>
 #include <QMouseEvent>
 #include <QToolButton>
-#include <QSvgRenderer>
-#include <QPainter>
 #include <QStyle>
 #include <QScrollArea>
-
-static const char* backIconSvg = R"(
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M19 12H5M12 19l-7-7 7-7"/>
-</svg>
-)";
-
-static const char* forwardIconSvg = R"(
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M5 12h14M12 5l7 7-7 7"/>
-</svg>
-)";
-
-static const char* reloadIconSvg = R"(
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-  <path d="M3 3v5h5"/>
-</svg>
-)";
-
-static const char* newTabIconSvg = R"(
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-  <line x1="12" y1="8" x2="12" y2="16"/>
-  <line x1="8" y1="12" x2="16" y2="12"/>
-</svg>
-)";
-
-static const char* closeIconSvg = R"(
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <line x1="18" y1="6" x2="6" y2="18"/>
-  <line x1="6" y1="6" x2="18" y2="18"/>
-</svg>
-)";
-
-QIcon createIconFromSvg(const QString& svgData, const QColor& color = Qt::white) {
-    QSvgRenderer renderer(svgData.toUtf8());
-    QPixmap pixmap(24, 24);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
-    painter.setPen(color);
-    renderer.render(&painter);
-    return QIcon(pixmap);
-}
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), isDragging(false)
@@ -247,25 +202,25 @@ void MainWindow::setupIcons()
 
     // Navigation buttons
     backButton = new QToolButton(sidebarWidget);
-    backButton->setIcon(createIconFromSvg(backIconSvg));
+    backButton->setIcon(Utils::createIconFromResource(":/icons/assets/back.svg"));
     backButton->setToolTip("Back");
     backButton->setFixedSize(32, 32);
     connect(backButton, &QToolButton::clicked, this, &MainWindow::goBack);
 
     forwardButton = new QToolButton(sidebarWidget);
-    forwardButton->setIcon(createIconFromSvg(forwardIconSvg));
+    forwardButton->setIcon(Utils::createIconFromResource(":/icons/assets/forward.svg"));
     forwardButton->setToolTip("Forward");
     forwardButton->setFixedSize(32, 32);
     connect(forwardButton, &QToolButton::clicked, this, &MainWindow::goForward);
 
     reloadButton = new QToolButton(sidebarWidget);
-    reloadButton->setIcon(createIconFromSvg(reloadIconSvg));
+    reloadButton->setIcon(Utils::createIconFromResource(":/icons/assets/reload.svg"));
     reloadButton->setToolTip("Reload");
     reloadButton->setFixedSize(32, 32);
     connect(reloadButton, &QToolButton::clicked, this, &MainWindow::reload);
 
     addTabButton = new QToolButton(sidebarWidget);
-    addTabButton->setIcon(createIconFromSvg(newTabIconSvg));
+    addTabButton->setIcon(Utils::createIconFromResource(":/icons/assets/plus.svg"));
     addTabButton->setToolTip("New Tab");
     addTabButton->setFixedSize(32, 32);
     connect(addTabButton, &QToolButton::clicked, this, [this]() { addNewTab(); });
@@ -295,7 +250,7 @@ QToolButton* MainWindow::createTabButton(const QString& title, int index) {
     }
 
     auto* closeButton = new QToolButton(button);
-    closeButton->setIcon(createIconFromSvg(closeIconSvg, QColor(200, 200, 200)));
+    closeButton->setIcon(Utils::createIconFromResource(":/icons/assets/close.svg", QColor(200, 200, 200)));
     closeButton->setFixedSize(16, 16);
     closeButton->setStyleSheet("QToolButton { background: transparent; border: none; }");
     closeButton->setCursor(Qt::ArrowCursor);
@@ -331,8 +286,8 @@ void MainWindow::updateTabButtons() {
         QString title = view->title();
         if (title.isEmpty()) {
             title = "New Tab";
-        } else if (title.length() > 20) {
-            title = title.left(17) + "...";
+        } else {
+            title = Utils::truncateString(title, 20);
         }
 
         QToolButton* button = createTabButton(title, i);
@@ -397,28 +352,14 @@ void MainWindow::navigateToUrl() const {
         return;
     }
 
-    QString url = urlBar->text();
-    if (!url.contains("://")) {
-        url = "https://" + url;
-    }
-
+    QString url = Utils::normalizeUrl(urlBar->text());
     webView->load(QUrl(url));
 }
 
 void MainWindow::updateUrlBar(const QUrl &url) const {
     // Only update if the sender is the current tab
     if (auto *webView = qobject_cast<QWebEngineView*>(sender()); webView == currentWebView()) {
-        // Simplify the URL display
-        QString displayUrl = url.host();
-        if (displayUrl.isEmpty()) {
-            displayUrl = url.toString();
-        } else {
-            // Add path if it's not just "/"
-            if (url.path().length() > 1) {
-                displayUrl += url.path();
-            }
-        }
-        urlBar->setText(displayUrl);
+        urlBar->setText(Utils::createDisplayUrl(url));
     }
 }
 
@@ -470,13 +411,7 @@ void MainWindow::closeTab(const int index)
         contentStack->setCurrentWidget(webViews[currentTabIndex]);
 
         QWebEngineView* view = webViews[currentTabIndex];
-        QString displayUrl = view->url().host();
-        if (displayUrl.isEmpty()) {
-            displayUrl = view->url().toString();
-        } else if (view->url().path().length() > 1) {
-            displayUrl += view->url().path();
-        }
-        urlBar->setText(displayUrl);
+        urlBar->setText(Utils::createDisplayUrl(view->url()));
 
         QString title = view->title();
         if (!title.isEmpty()) {
@@ -497,13 +432,7 @@ void MainWindow::tabClicked(int index)
 
         // Update URL bar
         QWebEngineView* view = webViews[index];
-        QString displayUrl = view->url().host();
-        if (displayUrl.isEmpty()) {
-            displayUrl = view->url().toString();
-        } else if (view->url().path().length() > 1) {
-            displayUrl += view->url().path();
-        }
-        urlBar->setText(displayUrl);
+        urlBar->setText(Utils::createDisplayUrl(view->url()));
 
         QString title = view->title();
         if (!title.isEmpty()) {
