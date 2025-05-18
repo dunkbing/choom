@@ -18,6 +18,8 @@ set(PROJECT_SOURCES
         src/mainwindow.h
         src/tab.h
         src/tab.cpp
+        src/title_bar.cpp
+        src/title_bar.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

@@ -12,7 +12,7 @@
 #include <QVBoxLayout>
 #include <QStackedWidget>
 
-class CustomTitleBar;
+#include "title_bar.h"
 
 class MainWindow final : public QMainWindow
 {
@@ -34,7 +34,6 @@ private slots:
     void reload() const;
     void addNewTab(const QUrl &url = QUrl("https://www.google.com"));
     void closeTab(int index);
-    void tabChanged(int index);
     void tabClicked(int index);
 
 private:
@@ -49,7 +48,7 @@ private:
     QToolButton *forwardButton;
     QToolButton *reloadButton;
     QToolButton *addTabButton;
-    CustomTitleBar *titleBar;
+    TitleBar *titleBar;
     bool isDragging = false;
     QPoint dragStartPosition;
     int currentTabIndex = -1;
@@ -63,25 +62,5 @@ private:
     QToolButton* createTabButton(const QString& title, int index);
 };
 
-class CustomTitleBar : public QWidget
-{
-    Q_OBJECT
-
-public:
-    explicit CustomTitleBar(QWidget *parent = nullptr);
-
-    signals:
-        void minimizeClicked();
-    void maximizeClicked();
-    void closeClicked();
-
-protected:
-    void paintEvent(QPaintEvent *event) override;
-
-private:
-    QAction *minimizeAction;
-    QAction *maximizeAction;
-    QAction *closeAction;
-};
 
 #endif // MAINWINDOW_H

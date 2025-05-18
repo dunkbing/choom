@@ -56,53 +56,6 @@ QIcon createIconFromSvg(const QString& svgData, const QColor& color = Qt::white)
     return QIcon(pixmap);
 }
 
-// CustomTitleBar implementation
-CustomTitleBar::CustomTitleBar(QWidget *parent) : QWidget(parent) {
-    setFixedHeight(30);
-
-    // Create layout
-    auto* layout = new QHBoxLayout(this);
-    layout->setContentsMargins(5, 0, 5, 0);
-    layout->setSpacing(0);
-
-    // Add spacer to push controls to the right
-    layout->addStretch();
-
-    // window control buttons
-    auto* minimizeButton = new QToolButton(this);
-    auto* maximizeButton = new QToolButton(this);
-    auto* closeButton = new QToolButton(this);
-
-    minimizeButton->setFixedSize(30, 30);
-    maximizeButton->setFixedSize(30, 30);
-    closeButton->setFixedSize(30, 30);
-
-    minimizeButton->setText("🗕");
-    maximizeButton->setText("🗖");
-    closeButton->setText("✕");
-
-    minimizeButton->setStyleSheet("QToolButton { border: none; color: #aaa; } QToolButton:hover { background-color: #444; }");
-    maximizeButton->setStyleSheet("QToolButton { border: none; color: #aaa; } QToolButton:hover { background-color: #444; }");
-    closeButton->setStyleSheet("QToolButton { border: none; color: #aaa; } QToolButton:hover { background-color: #e81123; color: white; }");
-
-    connect(minimizeButton, &QToolButton::clicked, this, &CustomTitleBar::minimizeClicked);
-    connect(maximizeButton, &QToolButton::clicked, this, &CustomTitleBar::maximizeClicked);
-    connect(closeButton, &QToolButton::clicked, this, &CustomTitleBar::closeClicked);
-
-    layout->addWidget(minimizeButton);
-    layout->addWidget(maximizeButton);
-    layout->addWidget(closeButton);
-
-    setStyleSheet("background-color: #24262e;");
-}
-
-void CustomTitleBar::paintEvent(QPaintEvent *) {
-    QStylePainter painter(this);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(36, 38, 46));
-    painter.drawRect(rect());
-}
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), isDragging(false)
 {
@@ -113,19 +66,19 @@ MainWindow::MainWindow(QWidget *parent)
 void MainWindow::setupUI()
 {
     // Create title bar
-    titleBar = new CustomTitleBar(this);
+    titleBar = new TitleBar(this);
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 
     setAttribute(Qt::WA_TranslucentBackground);
-    connect(titleBar, &CustomTitleBar::minimizeClicked, this, &MainWindow::showMinimized);
-    connect(titleBar, &CustomTitleBar::maximizeClicked, this, [this]() {
+    connect(titleBar, &TitleBar::minimizeClicked, this, &MainWindow::showMinimized);
+    connect(titleBar, &TitleBar::maximizeClicked, this, [this]() {
         if (isMaximized()) {
             showNormal();
         } else {
             showMaximized();
         }
     });
-    connect(titleBar, &CustomTitleBar::closeClicked, this, &MainWindow::close);
+    connect(titleBar, &TitleBar::closeClicked, this, &MainWindow::close);
 
     // Create a container widget for the title bar and main content
     auto* containerWidget = new QWidget(this);
@@ -503,21 +456,19 @@ void MainWindow::closeTab(const int index)
         return;
     }
 
-    // Remove the web view
     QWebEngineView* webView = webViews.takeAt(index);
     contentStack->removeWidget(webView);
     delete webView;
 
-    // Update current index if needed
+    // update current index
     if (currentTabIndex >= webViews.size()) {
         currentTabIndex = webViews.size() - 1;
     }
 
-    // Show the new current tab
+    // show the new current tab
     if (currentTabIndex >= 0 && currentTabIndex < webViews.size()) {
         contentStack->setCurrentWidget(webViews[currentTabIndex]);
 
-        // Update URL and title
         QWebEngineView* view = webViews[currentTabIndex];
         QString displayUrl = view->url().host();
         if (displayUrl.isEmpty()) {
@@ -535,7 +486,6 @@ void MainWindow::closeTab(const int index)
         }
     }
 
-    // Update tab buttons
     updateTabButtons();
 }
 
@@ -555,7 +505,6 @@ void MainWindow::tabClicked(int index)
         }
         urlBar->setText(displayUrl);
 
-        // Update window title
         QString title = view->title();
         if (!title.isEmpty()) {
             setWindowTitle(title + " - My Browser");
@@ -563,17 +512,11 @@ void MainWindow::tabClicked(int index)
             setWindowTitle("My Browser");
         }
 
-        // Update tab buttons
         updateTabButtons();
     }
 }
 
-void MainWindow::tabChanged(const int index)
-{
-    // This function is now handled by tabClicked
-}
-
-// Window dragging functionality
+// Window dragging
 void MainWindow::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton && titleBar->rect().contains(event->pos())) {
         isDragging = true;
