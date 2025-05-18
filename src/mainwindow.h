@@ -3,16 +3,14 @@
 
 #include <QMainWindow>
 #include <QWebEngineView>
-#include <QLineEdit>
 #include <QVector>
 #include <QUrl>
-#include <QStyleOptionTab>
 #include <QPainter>
 #include <QPoint>
-#include <QVBoxLayout>
 #include <QStackedWidget>
 
 #include "title_bar.h"
+#include "command_palette.h"
 
 class MainWindow final : public QMainWindow
 {
@@ -32,6 +30,8 @@ private slots:
     void goBack() const;
     void goForward() const;
     void reload() const;
+    void showCommandPalette() const;
+    void handleCommandPaletteUrl(const QUrl &url);
     void addNewTab(const QUrl &url = QUrl("https://www.google.com"));
     void closeTab(int index);
     void tabClicked(int index);
@@ -49,6 +49,7 @@ private:
     QToolButton *reloadButton;
     QToolButton *addTabButton;
     TitleBar *titleBar;
+    CommandPalette *commandPalette;
     bool isDragging = false;
     QPoint dragStartPosition;
     int currentTabIndex = -1;

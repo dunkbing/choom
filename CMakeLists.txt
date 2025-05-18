@@ -23,6 +23,8 @@ set(PROJECT_SOURCES
         src/utils.h
         src/utils.cpp
         resources.qrc
+        src/command_palette.cpp
+        src/command_palette.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

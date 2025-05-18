@@ -6,5 +6,8 @@
         <file>assets/reload.svg</file>
         <file>assets/plus.svg</file>
         <file>assets/close.svg</file>
+        <file>assets/reddit.png</file>
+        <file>assets/x.png</file>
+        <file>assets/notion.png</file>
     </qresource>
 </RCC>

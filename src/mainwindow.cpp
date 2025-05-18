@@ -15,6 +15,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), isDragging(false)
 {
     setupUI();
+    commandPalette = new CommandPalette(this);
+    connect(commandPalette, &CommandPalette::urlSelected, this, &MainWindow::handleCommandPaletteUrl);
     addNewTab();
 }
 
@@ -134,7 +136,7 @@ void MainWindow::setupUI()
     setStyleSheet(darkStyle);
 
     // shortcuts
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_T), this, SLOT(addNewTab()));
+    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_T), this, SLOT(showCommandPalette()));
     new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_W), this, [this]() {
         if (webViews.count() > 0) {
             closeTab(currentTabIndex);
@@ -384,8 +386,24 @@ void MainWindow::reload() const {
     }
 }
 
+void MainWindow::showCommandPalette() const {
+    if (commandPalette) {
+        commandPalette->exec();
+    }
+}
+
+void MainWindow::handleCommandPaletteUrl(const QUrl &url)
+{
+    addNewTab(url);
+}
+
 void MainWindow::addNewTab(const QUrl &url)
 {
+    if (url == QUrl("https://www.google.com") && sender() == addTabButton) {
+        showCommandPalette();
+        return;
+    }
+
     createWebView(url);
 }
 
