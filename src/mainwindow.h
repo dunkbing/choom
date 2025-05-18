@@ -18,23 +18,29 @@ class MainWindow final : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-
-private slots:
-    void navigateToUrl() const;
-    void updateUrlBar(const QUrl &url) const;
     void goBack() const;
     void goForward() const;
     void reload() const;
+    void addNewTab(const QUrl &url = QUrl("https://www.google.com"));
+#ifdef Q_OS_MAC
+    void *macosUrlField = nullptr; // NSTextField pointer
+    // friend class MacOSTitleBar;    // Allow MacOSTitleBar to access our private members
+#endif
+    QWebEngineView *currentWebView() const;
+    void navigateToUrl() const;
+    QLineEdit *urlBar;
+
+private slots:
+    void updateUrlBar(const QUrl &url) const;
+
     void showCommandPalette() const;
     void handleCommandPaletteUrl(const QUrl &url);
-    void addNewTab(const QUrl &url = QUrl("https://www.google.com"));
     void closeTab(int index);
     void tabClicked(int index);
 
 private:
     QStackedWidget *contentStack;
-    QVector<QWebEngineView*> webViews;
-    QLineEdit *urlBar;
+    QVector<QWebEngineView *> webViews;
     QWidget *sidebarWidget;
     QVBoxLayout *sidebarLayout;
     QVBoxLayout *tabsLayout;
@@ -52,11 +58,9 @@ private:
     void setupUI();
     void setupSidebar();
     void setupIcons();
-    void createWebView(const QUrl& url = QUrl("https://www.google.com"));
-    QWebEngineView* currentWebView() const;
+    void createWebView(const QUrl &url = QUrl("https://www.google.com"));
     void updateTabButtons();
-    QToolButton* createTabButton(const QString& title, int index);
+    QToolButton *createTabButton(const QString &title, int index);
 };
-
 
 #endif // MAINWINDOW_H

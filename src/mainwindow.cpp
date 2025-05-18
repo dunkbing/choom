@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "macos_titlebar.h"
 #include "utils.h"
 #include <QVBoxLayout>
 #include <QLabel>
@@ -8,11 +9,10 @@
 #include <QStylePainter>
 #include <QMouseEvent>
 #include <QToolButton>
-#include <QStyle>
 #include <QScrollArea>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), isDragging(false)
+    : QMainWindow(parent)
 {
     setupUI();
     commandPalette = new CommandPalette(this);
@@ -24,6 +24,7 @@ void MainWindow::setupUI()
 {
 #ifdef Q_OS_MACOS
     titleBar = nullptr; // no custom title bar on macOS
+    MacOSTitleBar::setupToolbar(this);
 #else
     // Create title bar
     titleBar = new TitleBar(this);

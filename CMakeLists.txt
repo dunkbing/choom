@@ -25,24 +25,32 @@ set(PROJECT_SOURCES
         resources.qrc
         src/command_palette.cpp
         src/command_palette.h
+        src/macos_titlebar.h
 )
+
+# Add macOS-specific files
+if(APPLE)
+    list(APPEND PROJECT_SOURCES src/macos_titlebar.mm)
+
+    # Enable Objective-C++ support
+    set(CMAKE_OBJCXX_STANDARD 11)
+    set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
+
+    # Add Objective-C++ flags
+    set(OBJCXX_FLAGS "-fobjc-arc")
+    set(CMAKE_OBJCXX_FLAGS "${CMAKE_OBJCXX_FLAGS} ${OBJCXX_FLAGS}")
+endif()
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(browser
             MANUAL_FINALIZATION
             ${PROJECT_SOURCES}
     )
-    # Define target properties for Android with Qt 6 as:
-    #    set_property(TARGET browser APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-    #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-    # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 else()
     if(ANDROID)
         add_library(browser SHARED
                 ${PROJECT_SOURCES}
         )
-        # Define properties for Android with Qt 5 after find_package() calls as:
-        #    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
         add_executable(browser
                 ${PROJECT_SOURCES}
@@ -54,9 +62,14 @@ target_link_libraries(browser PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(browser PRIVATE Qt${QT_VERSION_MAJOR}::WebEngineWidgets)
 target_link_libraries(browser PRIVATE Qt${QT_VERSION_MAJOR}::Svg)
 
+# Link macOS frameworks if building for Apple
+if(APPLE)
+    find_library(APPKIT AppKit)
+    find_library(FOUNDATION Foundation)
+    target_link_libraries(browser PRIVATE ${APPKIT} ${FOUNDATION})
+endif()
+
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
 if(${QT_VERSION} VERSION_LESS 6.1.0)
     set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.browser)
 endif()
