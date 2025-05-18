@@ -2,24 +2,37 @@
 #include <QVBoxLayout>
 #include <QAction>
 #include <QToolBar>
+#include <QMenu>
+#include <QLabel>
+#include <QApplication>
+#include <QMessageBox>
+#include <QShortcut>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    // Create the web view
-    webView = new QWebEngineView(this);
-    webView->load(QUrl("https://www.google.com"));
+    setupUI();
+    addNewTab();
+}
 
-    // Create URL bar
+void MainWindow::setupUI()
+{
+    // Create the tab widget
+    tabWidget = new QTabWidget(this);
+    tabWidget->setTabsClosable(true);
+    tabWidget->setMovable(true);
+    connect(tabWidget, &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
+    connect(tabWidget, &QTabWidget::currentChanged, this, &MainWindow::tabChanged);
+
+    // URL bar
     urlBar = new QLineEdit(this);
     connect(urlBar, &QLineEdit::returnPressed, this, &MainWindow::navigateToUrl);
-    connect(webView, &QWebEngineView::urlChanged, this, &MainWindow::updateUrlBar);
 
-    // Create toolbar
-    auto *navigationBar = new QToolBar(this);
+    // toolbar
+    navigationBar = new QToolBar(this);
     addToolBar(navigationBar);
 
-    // Add navigation buttons
+    // navigation buttons
     const QAction *backAction = navigationBar->addAction("Back");
     connect(backAction, &QAction::triggered, this, &MainWindow::goBack);
 
@@ -31,21 +44,92 @@ MainWindow::MainWindow(QWidget *parent)
 
     navigationBar->addWidget(urlBar);
 
-    // Set up the layout
-    auto *centralWidget = new QWidget(this);
-    auto *layout = new QVBoxLayout(centralWidget);
-    layout->addWidget(webView);
-    centralWidget->setLayout(layout);
-    setCentralWidget(centralWidget);
+    // new tab button
+    addTabAction = navigationBar->addAction("New Tab");
+    connect(addTabAction, &QAction::triggered, this, [this]() { addNewTab(); });
 
-    // Set window properties
+    // tab orientation selector
+    auto *orientationLabel = new QLabel("Tab Orientation: ");
+    navigationBar->addWidget(orientationLabel);
+
+    tabOrientationSelector = new QComboBox(this);
+    tabOrientationSelector->addItem("Horizontal", Qt::Horizontal);
+    tabOrientationSelector->addItem("Vertical", Qt::Vertical);
+    connect(tabOrientationSelector, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &MainWindow::changeTabOrientation);
+    navigationBar->addWidget(tabOrientationSelector);
+
+    setCentralWidget(tabWidget);
+
+    // window props
     resize(1024, 768);
     setWindowTitle("My Browser");
+
+    // shortcuts
+    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_T), this, SLOT(addNewTab()));
+    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_W), this, [this]() {
+        if (tabWidget->count() > 0) {
+            closeTab(tabWidget->currentIndex());
+        }
+    });
+}
+
+void MainWindow::createWebView(QUrl url)
+{
+    auto *webView = new QWebEngineView(this);
+    webView->load(url);
+
+    // Connect the URL changed signal to update URL bar
+    connect(webView, &QWebEngineView::urlChanged, this, &MainWindow::updateUrlBar);
+
+    // Add the web view to the tab widget
+    const int index = tabWidget->addTab(webView, "New Tab");
+    tabWidget->setCurrentIndex(index);
+
+    // Update tab title when the page title changes
+    connect(webView, &QWebEngineView::titleChanged, this, [this, webView](const QString &title) {
+        if (const int index_ = tabWidget->indexOf(webView); index_ != -1) {
+            QString tabTitle = title;
+            if (tabTitle.isEmpty()) {
+                tabTitle = "New Tab";
+            } else if (tabTitle.length() > 20) {
+                tabTitle = tabTitle.left(17) + "...";
+            }
+            tabWidget->setTabText(index_, tabTitle);
+
+            // Update window title for the current tab
+            if (tabWidget->currentIndex() == index_) {
+                setWindowTitle(title + " - My Browser");
+            }
+        }
+    });
+
+    // Update favicon when it changes
+    connect(webView, &QWebEngineView::iconChanged, this, [this, webView](const QIcon &icon) {
+        if (const int index_ = tabWidget->indexOf(webView); index_ != -1) {
+            tabWidget->setTabIcon(index_, icon);
+        }
+    });
+
+    // Give focus to the web view
+    webView->setFocus();
+}
+
+QWebEngineView* MainWindow::currentWebView() const
+{
+    if (tabWidget->count() == 0) {
+        return nullptr;
+    }
+    return qobject_cast<QWebEngineView*>(tabWidget->currentWidget());
 }
 
 void MainWindow::navigateToUrl() const {
-    QString url = urlBar->text();
+    QWebEngineView *webView = currentWebView();
+    if (!webView) {
+        return;
+    }
 
+    QString url = urlBar->text();
     if (!url.contains("://")) {
         url = "https://" + url;
     }
@@ -54,17 +138,89 @@ void MainWindow::navigateToUrl() const {
 }
 
 void MainWindow::updateUrlBar(const QUrl &url) const {
-    urlBar->setText(url.toString());
+    // Only update if the sender is the current tab
+    if (auto *webView = qobject_cast<QWebEngineView*>(sender()); webView == currentWebView()) {
+        urlBar->setText(url.toString());
+    }
 }
 
 void MainWindow::goBack() const {
-    webView->back();
+    QWebEngineView *webView = currentWebView();
+    if (webView) {
+        webView->back();
+    }
 }
 
 void MainWindow::goForward() const {
-    webView->forward();
+    QWebEngineView *webView = currentWebView();
+    if (webView) {
+        webView->forward();
+    }
 }
 
 void MainWindow::reload() const {
-    webView->reload();
+    QWebEngineView *webView = currentWebView();
+    if (webView) {
+        webView->reload();
+    }
+}
+
+void MainWindow::addNewTab(const QUrl &url)
+{
+    createWebView(url);
+}
+
+void MainWindow::closeTab(const int index)
+{
+    // Ensure we keep at least one tab open
+    if (tabWidget->count() <= 1) {
+        QMessageBox::information(this, "Cannot Close Tab", "Cannot close the last tab. Application would exit instead.");
+        return;
+    }
+
+    // Get the widget at the index
+    const QWidget *widget = tabWidget->widget(index);
+
+    // Remove the tab
+    tabWidget->removeTab(index);
+
+    // Delete the widget to free resources
+    delete widget;
+}
+
+void MainWindow::changeTabOrientation(int index)
+{
+    int orientation = tabOrientationSelector->itemData(index).toInt();
+
+    if (orientation == Qt::Horizontal) {
+        tabWidget->setTabPosition(QTabWidget::North);
+    } else {
+        tabWidget->setTabPosition(QTabWidget::West);
+    }
+
+    currentTabOrientation = orientation;
+}
+
+void MainWindow::tabChanged(const int index)
+{
+    if (index == -1) {
+        // No tabs left
+        urlBar->clear();
+        setWindowTitle("My Browser");
+        return;
+    }
+
+    // Update URL bar for the newly selected tab
+    auto *webView = qobject_cast<QWebEngineView*>(tabWidget->widget(index));
+    if (webView) {
+        urlBar->setText(webView->url().toString());
+
+        // Update window title
+        QString title = webView->title();
+        if (!title.isEmpty()) {
+            setWindowTitle(title + " - My Browser");
+        } else {
+            setWindowTitle("My Browser");
+        }
+    }
 }
