@@ -156,12 +156,6 @@ void MainWindow::setupSidebar()
     sidebarLayout->setContentsMargins(10, 10, 10, 10);
     sidebarLayout->setSpacing(10);
 
-    // Add a logo or title
-    auto* sidebarTitle = new QLabel("Browser Sidebar", sidebarWidget);
-    sidebarTitle->setAlignment(Qt::AlignCenter);
-    sidebarTitle->setStyleSheet("font-size: 16px; font-weight: bold; margin-bottom: 10px;");
-    sidebarLayout->addWidget(sidebarTitle);
-
     // Setup navigation buttons
     setupIcons();
 
@@ -274,7 +268,6 @@ QToolButton* MainWindow::createTabButton(const QString& title, int index) {
 }
 
 void MainWindow::updateTabButtons() {
-    // Clear existing tab buttons
     while (QLayoutItem* item = tabsLayout->takeAt(0)) {
         if (QWidget* widget = item->widget()) {
             widget->deleteLater();
@@ -282,7 +275,6 @@ void MainWindow::updateTabButtons() {
         delete item;
     }
 
-    // new tab buttons
     for (int i = 0; i < webViews.size(); ++i) {
         QWebEngineView* view = webViews[i];
         QString title = view->title();
