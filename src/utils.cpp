@@ -11,6 +11,33 @@
 
 namespace Utils {
     QIcon createIconFromResource(const QString& resourcePath, const QColor& color) {
+        if (resourcePath.endsWith(".png", Qt::CaseInsensitive)) {
+            QPixmap pixmap(resourcePath);
+            if (pixmap.isNull()) {
+                qWarning() << "Could not load PNG resource:" << resourcePath;
+                return QIcon();
+            }
+
+            // If color is not the default (white), apply a colorize effect
+            if (color != Qt::white) {
+                QImage image = pixmap.toImage();
+                for (int y = 0; y < image.height(); ++y) {
+                    for (int x = 0; x < image.width(); ++x) {
+                        QColor pixelColor = QColor::fromRgba(image.pixel(x, y));
+                        if (pixelColor.alpha() > 0) {
+                            pixelColor.setRed(color.red());
+                            pixelColor.setGreen(color.green());
+                            pixelColor.setBlue(color.blue());
+                            image.setPixelColor(x, y, pixelColor);
+                        }
+                    }
+                }
+                pixmap = QPixmap::fromImage(image);
+            }
+
+            return QIcon(pixmap);
+        }
+
         QFile file(resourcePath);
         if (!file.open(QIODevice::ReadOnly)) {
             qWarning() << "Could not open resource file:" << resourcePath;

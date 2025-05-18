@@ -56,10 +56,8 @@ void CommandPalette::initializeUI()
     websiteList->setObjectName("commandPaletteList");
     websiteList->setFrameShape(QFrame::NoFrame);
     websiteList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-    // Add widgets to layout
-    layout->addWidget(searchBox);
-    layout->addWidget(websiteList);
+    websiteList->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    websiteList->setSpacing(4); // Add spacing between items
 
     // Apply styling
     setStyleSheet(R"(
@@ -85,23 +83,24 @@ void CommandPalette::initializeUI()
             font-size: 13px;
         }
         QListWidget#commandPaletteList::item {
-            padding: 10px;
+            background-color: transparent;
             border-radius: 6px;
+            padding: 0px;
         }
-        QListWidget#commandPaletteList::item:selected {
+        QListWidget#commandPaletteList::item:selected, QListWidget#commandPaletteList::item:hover {
             background-color: #36383e;
         }
-        QListWidget#commandPaletteList::item:hover {
-            background-color: #303238;
-        }
     )");
+
+    layout->addWidget(searchBox);
+    layout->addWidget(websiteList);
 }
 
 void CommandPalette::initializeWebsites()
 {
-    websites["notion"] = Website("notion", "notion.com", ":/icons/assets/notion.png");
-    websites["x"] = Website("x", "x.com/zen_browser", ":/icons/assets/x.png");
-    websites["reddit"] = Website("reddit", "reddit.com/r/zen_browser", ":/icons/assets/reddit.png");
+    websites["notion"] = Website("Notion", "notion.com", ":/icons/assets/notion.png");
+    websites["x"] = Website("X", "x.com/zen_browser", ":/icons/assets/x.png");
+    websites["reddit"] = Website("Reddit", "reddit.com/r/zen_browser", ":/icons/assets/reddit.png");
 }
 
 void CommandPalette::addWebsiteToList(const Website &website) const {
@@ -109,12 +108,17 @@ void CommandPalette::addWebsiteToList(const Website &website) const {
 
     // Create a widget to hold the icon and text
     auto itemWidget = new QWidget();
+    itemWidget->setObjectName("paletteItemWidget");
+    itemWidget->setAttribute(Qt::WA_TranslucentBackground); // Make widget background transparent
+
     auto itemLayout = new QHBoxLayout(itemWidget);
-    itemLayout->setContentsMargins(5, 2, 5, 2);
+    itemLayout->setContentsMargins(10, 8, 10, 8);
+    itemLayout->setSpacing(10);
 
     // Create icon label
     auto iconLabel = new QLabel();
     iconLabel->setFixedSize(24, 24);
+    iconLabel->setAlignment(Qt::AlignCenter);
 
     // Try to load the icon
     if (!website.icon.isEmpty()) {
@@ -140,15 +144,15 @@ void CommandPalette::addWebsiteToList(const Website &website) const {
     // Add an em dash between name and URL
     urlLabel->setText(" — " + displayUrl);
     urlLabel->setStyleSheet("color: #aaaaaa;");
+    urlLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     // Add to layout
     itemLayout->addWidget(iconLabel);
     itemLayout->addWidget(nameLabel);
     itemLayout->addWidget(urlLabel, 1);
-    itemLayout->addStretch();
 
     // Add a Switch to Tab button if needed (could be implemented later)
-    if (website.name == "discord" || website.name == "github") {
+    if (website.name == "Discord" || website.name == "GitHub") {
         auto switchButton = new QPushButton("Switch to Tab");
         switchButton->setStyleSheet(R"(
             QPushButton {
@@ -165,8 +169,11 @@ void CommandPalette::addWebsiteToList(const Website &website) const {
         itemLayout->addWidget(switchButton);
     }
 
+    // Set fixed height for the widget
+    itemWidget->setFixedHeight(40);
+
     // Set the custom widget
-    item->setSizeHint(itemWidget->sizeHint());
+    item->setSizeHint(QSize(websiteList->width() - 20, 40));
     websiteList->setItemWidget(item, itemWidget);
 
     // Store the website URL as item data
