@@ -22,11 +22,13 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::setupUI()
 {
+#ifdef Q_OS_MACOS
+    titleBar = nullptr; // no custom title bar on macOS
+#else
     // Create title bar
     titleBar = new TitleBar(this);
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 
-    setAttribute(Qt::WA_TranslucentBackground);
     connect(titleBar, &TitleBar::minimizeClicked, this, &MainWindow::showMinimized);
     connect(titleBar, &TitleBar::maximizeClicked, this, [this]() {
         if (isMaximized()) {
@@ -36,6 +38,8 @@ void MainWindow::setupUI()
         }
     });
     connect(titleBar, &TitleBar::closeClicked, this, &MainWindow::close);
+#endif
+    setAttribute(Qt::WA_TranslucentBackground);
 
     // Create a container widget for the title bar and main content
     auto* containerWidget = new QWidget(this);
@@ -43,14 +47,17 @@ void MainWindow::setupUI()
     containerLayout->setContentsMargins(0, 0, 0, 0);
     containerLayout->setSpacing(0);
 
+    setupSidebar();
+
     // Create main content layout
     auto* mainLayout = new QVBoxLayout();
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
-    mainLayout->addWidget(titleBar);
 
-    // Create the sidebar
-    setupSidebar();
+#ifndef Q_OS_MACOS
+    // Add custom title bar for non-macOS platforms
+    mainLayout->addWidget(titleBar);
+#endif
 
     // Create the content stacked widget
     contentStack = new QStackedWidget(this);
@@ -153,7 +160,13 @@ void MainWindow::setupSidebar()
 
     // Create sidebar layout
     sidebarLayout = new QVBoxLayout(sidebarWidget);
+
+#ifdef Q_OS_MACOS
+    // On macOS, add some extra space at the top of the sidebar to make room for traffic lights
+    sidebarLayout->setContentsMargins(10, 30, 10, 10);
+#else
     sidebarLayout->setContentsMargins(10, 10, 10, 10);
+#endif
     sidebarLayout->setSpacing(10);
 
     // Setup navigation buttons
@@ -452,28 +465,5 @@ void MainWindow::tabClicked(int index)
         }
 
         updateTabButtons();
-    }
-}
-
-// Window dragging
-void MainWindow::mousePressEvent(QMouseEvent *event) {
-    if (event->button() == Qt::LeftButton && titleBar->rect().contains(event->pos())) {
-        isDragging = true;
-        dragStartPosition = event->globalPos() - frameGeometry().topLeft();
-        event->accept();
-    }
-}
-
-void MainWindow::mouseMoveEvent(QMouseEvent *event) {
-    if (isDragging && (event->buttons() & Qt::LeftButton)) {
-        move(event->globalPos() - dragStartPosition);
-        event->accept();
-    }
-}
-
-void MainWindow::mouseReleaseEvent(QMouseEvent *event) {
-    if (event->button() == Qt::LeftButton) {
-        isDragging = false;
-        event->accept();
     }
 }

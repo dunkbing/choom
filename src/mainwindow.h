@@ -19,11 +19,6 @@ class MainWindow final : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
 
-protected:
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
-
 private slots:
     void navigateToUrl() const;
     void updateUrlBar(const QUrl &url) const;
