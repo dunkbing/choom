@@ -47,6 +47,61 @@ NSWindow* getNSWindowFromMainWindow(MainWindow* mainWindow) {
     return nsWindow;
 }
 
+// Custom button class that implements hover tracking
+@interface HoverButton : NSButton
+@property (nonatomic, strong) NSColor* normalColor;
+@property (nonatomic, strong) NSColor* hoverColor;
+@property (nonatomic, assign) BOOL isHovered;
+@end
+
+@implementation HoverButton
+- (instancetype)initWithFrame:(NSRect)frameRect {
+    self = [super initWithFrame:frameRect];
+    if (self) {
+        _normalColor = [NSColor whiteColor];
+        _hoverColor = [NSColor colorWithWhite:0.7 alpha:1.0]; // Light gray for hover state
+        _isHovered = NO;
+
+        // Enable tracking for mouse enter/exit events
+        NSTrackingAreaOptions options = NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect |
+                                        NSTrackingMouseEnteredAndExited;
+        NSTrackingArea *trackingArea = [[NSTrackingArea alloc] initWithRect:self.bounds
+                                                                    options:options
+                                                                      owner:self
+                                                                   userInfo:nil];
+        [self addTrackingArea:trackingArea];
+    }
+    return self;
+}
+
+- (void)updateTintColor {
+    if (_isHovered) {
+        [self setContentTintColor:_hoverColor];
+    } else {
+        [self setContentTintColor:_normalColor];
+    }
+}
+
+- (void)mouseEntered:(NSEvent *)event {
+    _isHovered = YES;
+    [self updateTintColor];
+
+    // Add subtle background highlight
+    [self setWantsLayer:YES];
+    self.layer.backgroundColor = [NSColor colorWithWhite:0.3 alpha:0.3].CGColor;
+    self.layer.cornerRadius = 4.0;
+}
+
+- (void)mouseExited:(NSEvent *)event {
+    _isHovered = NO;
+    [self updateTintColor];
+
+    // Remove background highlight
+    self.layer.backgroundColor = [NSColor clearColor].CGColor;
+}
+
+@end
+
 // Objective-C++ class for button actions
 @interface MacOSButtonActions : NSObject
 @property (nonatomic, assign) MainWindow* mainWindow;
@@ -82,8 +137,8 @@ namespace {
 }
 
 // Helper to create a button with icon or text
-NSButton* createToolbarButton(SEL action, id target, NSRect frame, NSString* fallbackText, NSString* symbolName) {
-    NSButton* button = [[NSButton alloc] initWithFrame:frame];
+HoverButton* createToolbarButton(SEL action, id target, NSRect frame, NSString* fallbackText, NSString* symbolName) {
+    HoverButton* button = [[HoverButton alloc] initWithFrame:frame];
     [button setTitle:@""];
     [button setBezelStyle:NSBezelStyleRegularSquare]; // More minimal style
     [button setBordered:NO]; // Remove border
@@ -171,7 +226,7 @@ void MacOSTitleBar::setupToolbar(MainWindow* mainWindow) {
         CGFloat currentX = 70; // Starting X position (adjust as needed)
 
         // Create back button
-        NSButton* backButton = createToolbarButton(@selector(backButtonClicked:),
+        HoverButton* backButton = createToolbarButton(@selector(backButtonClicked:),
                                                buttonActions,
                                                NSMakeRect(currentX, buttonY, buttonHeight, buttonHeight),
                                                @"◀",
@@ -180,7 +235,7 @@ void MacOSTitleBar::setupToolbar(MainWindow* mainWindow) {
         currentX += buttonHeight + 5;
 
         // Create forward button
-        NSButton* forwardButton = createToolbarButton(@selector(forwardButtonClicked:),
+        HoverButton* forwardButton = createToolbarButton(@selector(forwardButtonClicked:),
                                                   buttonActions,
                                                   NSMakeRect(currentX, buttonY, buttonHeight, buttonHeight),
                                                   @"▶",
@@ -189,7 +244,7 @@ void MacOSTitleBar::setupToolbar(MainWindow* mainWindow) {
         currentX += buttonHeight + 5;
 
         // Create reload button
-        NSButton* reloadButton = createToolbarButton(@selector(reloadButtonClicked:),
+        HoverButton* reloadButton = createToolbarButton(@selector(reloadButtonClicked:),
                                                  buttonActions,
                                                  NSMakeRect(currentX, buttonY, buttonHeight, buttonHeight),
                                                  @"↻",
