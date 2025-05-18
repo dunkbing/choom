@@ -9,8 +9,11 @@
 #include <QUrl>
 #include <QStyleOptionTab>
 #include <QPainter>
+#include <QPoint>
 
 #include "tab.h"
+
+class CustomTitleBar;
 
 class MainWindow final : public QMainWindow
 {
@@ -18,6 +21,11 @@ class MainWindow final : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
 
 private slots:
     void navigateToUrl() const;
@@ -36,11 +44,36 @@ private:
     QToolBar *navigationBar;
     QComboBox *tabOrientationSelector;
     QAction *addTabAction;
+    CustomTitleBar *titleBar;
     int currentTabOrientation = Qt::Horizontal;
+    bool isDragging = false;
+    QPoint dragStartPosition;
 
     void setupUI();
+    void setupIcons();
     void createWebView(const QUrl& url = QUrl("https://www.google.com"));
     QWebEngineView* currentWebView() const;
+};
+
+class CustomTitleBar : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit CustomTitleBar(QWidget *parent = nullptr);
+
+    signals:
+        void minimizeClicked();
+    void maximizeClicked();
+    void closeClicked();
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+
+private:
+    QAction *minimizeAction;
+    QAction *maximizeAction;
+    QAction *closeAction;
 };
 
 #endif // MAINWINDOW_H

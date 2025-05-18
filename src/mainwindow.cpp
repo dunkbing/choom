@@ -1,5 +1,5 @@
 #include "mainwindow.h"
-#include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QAction>
 #include <QToolBar>
 #include <QMenu>
@@ -8,9 +8,98 @@
 #include <QMessageBox>
 #include <QShortcut>
 #include <QStylePainter>
+#include <QMouseEvent>
+#include <QToolButton>
+#include <QSvgRenderer>
+#include <QPainter>
+#include <QStyle>
+
+static const char* backIconSvg = R"(
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M19 12H5M12 19l-7-7 7-7"/>
+</svg>
+)";
+
+static const char* forwardIconSvg = R"(
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M5 12h14M12 5l7 7-7 7"/>
+</svg>
+)";
+
+static const char* reloadIconSvg = R"(
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+  <path d="M3 3v5h5"/>
+</svg>
+)";
+
+static const char* newTabIconSvg = R"(
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+  <line x1="12" y1="8" x2="12" y2="16"/>
+  <line x1="8" y1="12" x2="16" y2="12"/>
+</svg>
+)";
+
+QIcon createIconFromSvg(const QString& svgData, const QColor& color = Qt::white) {
+    QSvgRenderer renderer(svgData.toUtf8());
+    QPixmap pixmap(24, 24);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    painter.setPen(color);
+    renderer.render(&painter);
+    return QIcon(pixmap);
+}
+
+// CustomTitleBar implementation
+CustomTitleBar::CustomTitleBar(QWidget *parent) : QWidget(parent) {
+    setFixedHeight(30);
+
+    // Create layout
+    auto* layout = new QHBoxLayout(this);
+    layout->setContentsMargins(5, 0, 5, 0);
+    layout->setSpacing(0);
+
+    // Add spacer to push controls to the right
+    layout->addStretch();
+
+    // window control buttons
+    auto* minimizeButton = new QToolButton(this);
+    auto* maximizeButton = new QToolButton(this);
+    auto* closeButton = new QToolButton(this);
+
+    minimizeButton->setFixedSize(30, 30);
+    maximizeButton->setFixedSize(30, 30);
+    closeButton->setFixedSize(30, 30);
+
+    minimizeButton->setText("🗕");
+    maximizeButton->setText("🗖");
+    closeButton->setText("✕");
+
+    minimizeButton->setStyleSheet("QToolButton { border: none; color: #aaa; } QToolButton:hover { background-color: #444; }");
+    maximizeButton->setStyleSheet("QToolButton { border: none; color: #aaa; } QToolButton:hover { background-color: #444; }");
+    closeButton->setStyleSheet("QToolButton { border: none; color: #aaa; } QToolButton:hover { background-color: #e81123; color: white; }");
+
+    connect(minimizeButton, &QToolButton::clicked, this, &CustomTitleBar::minimizeClicked);
+    connect(maximizeButton, &QToolButton::clicked, this, &CustomTitleBar::maximizeClicked);
+    connect(closeButton, &QToolButton::clicked, this, &CustomTitleBar::closeClicked);
+
+    layout->addWidget(minimizeButton);
+    layout->addWidget(maximizeButton);
+    layout->addWidget(closeButton);
+
+    setStyleSheet("background-color: #24262e;");
+}
+
+void CustomTitleBar::paintEvent(QPaintEvent *) {
+    QStylePainter painter(this);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(36, 38, 46));
+    painter.drawRect(rect());
+}
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+    : QMainWindow(parent), isDragging(false)
 {
     setupUI();
     addNewTab();
@@ -18,6 +107,28 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::setupUI()
 {
+    // Create title bar
+    titleBar = new CustomTitleBar(this);
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+
+    setAttribute(Qt::WA_TranslucentBackground);
+    connect(titleBar, &CustomTitleBar::minimizeClicked, this, &MainWindow::showMinimized);
+    connect(titleBar, &CustomTitleBar::maximizeClicked, this, [this]() {
+        if (isMaximized()) {
+            showNormal();
+        } else {
+            showMaximized();
+        }
+    });
+    connect(titleBar, &CustomTitleBar::closeClicked, this, &MainWindow::close);
+
+    // Create a container widget for the title bar and main content
+    auto* containerWidget = new QWidget(this);
+    auto* containerLayout = new QVBoxLayout(containerWidget);
+    containerLayout->setContentsMargins(0, 0, 0, 0);
+    containerLayout->setSpacing(0);
+    containerLayout->addWidget(titleBar);
+
     // Create the custom tab widget
     tabWidget = new TabWidget(this);
     connect(tabWidget, &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
@@ -25,40 +136,21 @@ void MainWindow::setupUI()
 
     // URL bar
     urlBar = new QLineEdit(this);
+    urlBar->setPlaceholderText("Enter URL...");
     connect(urlBar, &QLineEdit::returnPressed, this, &MainWindow::navigateToUrl);
 
     // toolbar
     navigationBar = new QToolBar(this);
-    addToolBar(navigationBar);
+    navigationBar->setIconSize(QSize(20, 20));
+    navigationBar->setMovable(false);
 
-    // navigation buttons
-    const QAction *backAction = navigationBar->addAction("Back");
-    connect(backAction, &QAction::triggered, this, &MainWindow::goBack);
+    // Add actions with icons
+    setupIcons();
 
-    const QAction *forwardAction = navigationBar->addAction("Forward");
-    connect(forwardAction, &QAction::triggered, this, &MainWindow::goForward);
-
-    const QAction *reloadAction = navigationBar->addAction("Reload");
-    connect(reloadAction, &QAction::triggered, this, &MainWindow::reload);
-
-    navigationBar->addWidget(urlBar);
-
-    // new tab button
-    addTabAction = navigationBar->addAction("New Tab");
-    connect(addTabAction, &QAction::triggered, this, [this]() { addNewTab(); });
-
-    // tab orientation selector
-    auto *orientationLabel = new QLabel("Tab Orientation: ");
-    navigationBar->addWidget(orientationLabel);
-
-    tabOrientationSelector = new QComboBox(this);
-    tabOrientationSelector->addItem("Horizontal", Qt::Horizontal);
-    tabOrientationSelector->addItem("Vertical", Qt::Vertical);
-    connect(tabOrientationSelector, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &MainWindow::changeTabOrientation);
-    navigationBar->addWidget(tabOrientationSelector);
-
-    setCentralWidget(tabWidget);
+    // Complete the container layout
+    containerLayout->addWidget(navigationBar);
+    containerLayout->addWidget(tabWidget, 1);
+    setCentralWidget(containerWidget);
 
     // window props
     resize(1024, 768);
@@ -73,22 +165,44 @@ void MainWindow::setupUI()
         QToolBar {
             background-color: #24262e;
             border: none;
+            spacing: 5px;
+            padding: 5px;
         }
         QLineEdit {
             background-color: #36383e;
             color: #ffffff;
             border: 1px solid #444;
-            padding: 5px;
-            border-radius: 2px;
+            padding: 8px;
+            border-radius: 4px;
+            selection-background-color: #4d78cc;
         }
         QComboBox {
             background-color: #36383e;
             color: #ffffff;
             border: 1px solid #444;
             padding: 5px;
+            border-radius: 4px;
+            min-height: 25px;
         }
-        QTabWidget {
-            background-color: #24262e;
+        QComboBox::drop-down {
+            border: none;
+            width: 20px;
+        }
+        QComboBox::down-arrow {
+            width: 14px;
+            height: 14px;
+        }
+        QToolButton {
+            background-color: #36383e;
+            border: none;
+            border-radius: 4px;
+            padding: 5px;
+        }
+        QToolButton:hover {
+            background-color: #454750;
+        }
+        QToolButton:pressed {
+            background-color: #303238;
         }
     )";
 
@@ -104,6 +218,38 @@ void MainWindow::setupUI()
 
     // default vertical tab
     tabOrientationSelector->setCurrentIndex(1);
+}
+
+void MainWindow::setupIcons()
+{
+    // action icons
+    QAction *backAction = navigationBar->addAction(createIconFromSvg(backIconSvg), "Back");
+    connect(backAction, &QAction::triggered, this, &MainWindow::goBack);
+
+    QAction *forwardAction = navigationBar->addAction(createIconFromSvg(forwardIconSvg), "Forward");
+    connect(forwardAction, &QAction::triggered, this, &MainWindow::goForward);
+
+    QAction *reloadAction = navigationBar->addAction(createIconFromSvg(reloadIconSvg), "Reload");
+    connect(reloadAction, &QAction::triggered, this, &MainWindow::reload);
+
+    navigationBar->addSeparator();
+    navigationBar->addWidget(urlBar);
+
+    // new tab
+    addTabAction = navigationBar->addAction(createIconFromSvg(newTabIconSvg), "New Tab");
+    connect(addTabAction, &QAction::triggered, this, [this]() { addNewTab(); });
+
+    // tab orientation selector
+    auto *orientationLabel = new QLabel("Tab Orientation: ");
+    orientationLabel->setStyleSheet("margin-left: 5px;");
+    navigationBar->addWidget(orientationLabel);
+
+    tabOrientationSelector = new QComboBox(this);
+    tabOrientationSelector->addItem("Horizontal", Qt::Horizontal);
+    tabOrientationSelector->addItem("Vertical", Qt::Vertical);
+    connect(tabOrientationSelector, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &MainWindow::changeTabOrientation);
+    navigationBar->addWidget(tabOrientationSelector);
 }
 
 void MainWindow::createWebView(const QUrl& url)
@@ -243,5 +389,28 @@ void MainWindow::tabChanged(const int index)
         } else {
             setWindowTitle("My Browser");
         }
+    }
+}
+
+// Window dragging functionality
+void MainWindow::mousePressEvent(QMouseEvent *event) {
+    if (event->button() == Qt::LeftButton && titleBar->rect().contains(event->pos())) {
+        isDragging = true;
+        dragStartPosition = event->globalPos() - frameGeometry().topLeft();
+        event->accept();
+    }
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent *event) {
+    if (isDragging && (event->buttons() & Qt::LeftButton)) {
+        move(event->globalPos() - dragStartPosition);
+        event->accept();
+    }
+}
+
+void MainWindow::mouseReleaseEvent(QMouseEvent *event) {
+    if (event->button() == Qt::LeftButton) {
+        isDragging = false;
+        event->accept();
     }
 }
