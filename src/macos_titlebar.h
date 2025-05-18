@@ -10,6 +10,7 @@ class MainWindow;
 class MacOSTitleBar {
 public:
     static void setupToolbar(MainWindow* mainWindow);
+    static void hideWindowTitleBar(MainWindow *window);
 };
 
 #endif // MACOS_TITLEBAR_H

@@ -45,9 +45,6 @@ private:
     QVBoxLayout *sidebarLayout;
     QVBoxLayout *tabsLayout;
     QWidget *tabsContainer;
-    QToolButton *backButton;
-    QToolButton *forwardButton;
-    QToolButton *reloadButton;
     QToolButton *addTabButton;
     TitleBar *titleBar;
     CommandPalette *commandPalette;

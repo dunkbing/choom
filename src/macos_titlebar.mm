@@ -257,3 +257,16 @@ void MacOSTitleBar::setupToolbar(MainWindow* mainWindow) {
         mainWindow->setContentsMargins(0, 0, 0, 0);
     });
 }
+
+void MacOSTitleBar::hideWindowTitleBar(MainWindow *window) {
+    QTimer::singleShot(100, [window]() {
+        window->setUnifiedTitleAndToolBarOnMac(true);
+
+        NSView* nativeView = reinterpret_cast<NSView*>(window->winId());
+        NSWindow* nativeWindow = [nativeView window];
+
+        [nativeWindow setStyleMask:[nativeWindow styleMask] | NSWindowStyleMaskFullSizeContentView | NSWindowTitleHidden];
+        [nativeWindow setTitlebarAppearsTransparent:YES];
+        [nativeWindow center];
+    });
+}

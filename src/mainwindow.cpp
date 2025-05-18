@@ -41,6 +41,7 @@ void MainWindow::setupUI()
     connect(titleBar, &TitleBar::closeClicked, this, &MainWindow::close);
 #endif
     setAttribute(Qt::WA_TranslucentBackground);
+    setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
 
     // Create a container widget for the title bar and main content
     auto* containerWidget = new QWidget(this);
@@ -78,6 +79,7 @@ void MainWindow::setupUI()
 
     containerLayout->addLayout(mainLayout, 1);
     setCentralWidget(containerWidget);
+    MacOSTitleBar::hideWindowTitleBar(this);
 
     // window props
     resize(1024, 768);
@@ -163,7 +165,6 @@ void MainWindow::setupSidebar()
     sidebarLayout = new QVBoxLayout(sidebarWidget);
 
 #ifdef Q_OS_MACOS
-    // On macOS, add some extra space at the top of the sidebar to make room for traffic lights
     sidebarLayout->setContentsMargins(10, 30, 10, 10);
 #else
     sidebarLayout->setContentsMargins(10, 10, 10, 10);
@@ -210,34 +211,12 @@ void MainWindow::setupIcons()
     auto* navButtonLayout = new QHBoxLayout();
     navButtonLayout->setSpacing(5);
 
-    // Navigation buttons
-    backButton = new QToolButton(sidebarWidget);
-    backButton->setIcon(Utils::createIconFromResource(":/icons/assets/back.svg"));
-    backButton->setToolTip("Back");
-    backButton->setFixedSize(32, 32);
-    connect(backButton, &QToolButton::clicked, this, &MainWindow::goBack);
-
-    forwardButton = new QToolButton(sidebarWidget);
-    forwardButton->setIcon(Utils::createIconFromResource(":/icons/assets/forward.svg"));
-    forwardButton->setToolTip("Forward");
-    forwardButton->setFixedSize(32, 32);
-    connect(forwardButton, &QToolButton::clicked, this, &MainWindow::goForward);
-
-    reloadButton = new QToolButton(sidebarWidget);
-    reloadButton->setIcon(Utils::createIconFromResource(":/icons/assets/reload.svg"));
-    reloadButton->setToolTip("Reload");
-    reloadButton->setFixedSize(32, 32);
-    connect(reloadButton, &QToolButton::clicked, this, &MainWindow::reload);
-
     addTabButton = new QToolButton(sidebarWidget);
     addTabButton->setIcon(Utils::createIconFromResource(":/icons/assets/plus.svg"));
     addTabButton->setToolTip("New Tab");
     addTabButton->setFixedSize(32, 32);
     connect(addTabButton, &QToolButton::clicked, this, [this]() { addNewTab(); });
 
-    navButtonLayout->addWidget(backButton);
-    navButtonLayout->addWidget(forwardButton);
-    navButtonLayout->addWidget(reloadButton);
     navButtonLayout->addWidget(addTabButton);
     navButtonLayout->addStretch(1);
 
