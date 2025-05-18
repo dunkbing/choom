@@ -1,5 +1,5 @@
 #include "mainwindow.h"
-#include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QAction>
 #include <QToolBar>
 #include <QMenu>
@@ -7,6 +7,7 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QShortcut>
+#include <QStylePainter>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -17,10 +18,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::setupUI()
 {
-    // Create the tab widget
-    tabWidget = new QTabWidget(this);
-    tabWidget->setTabsClosable(true);
-    tabWidget->setMovable(true);
+    // Create the custom tab widget
+    tabWidget = new TabWidget(this);
     connect(tabWidget, &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
     connect(tabWidget, &QTabWidget::currentChanged, this, &MainWindow::tabChanged);
 
@@ -65,6 +64,36 @@ void MainWindow::setupUI()
     resize(1024, 768);
     setWindowTitle("My Browser");
 
+    // dark theme
+    QString darkStyle = R"(
+        QMainWindow, QWidget {
+            background-color: #24262e;
+            color: #ffffff;
+        }
+        QToolBar {
+            background-color: #24262e;
+            border: none;
+        }
+        QLineEdit {
+            background-color: #36383e;
+            color: #ffffff;
+            border: 1px solid #444;
+            padding: 5px;
+            border-radius: 2px;
+        }
+        QComboBox {
+            background-color: #36383e;
+            color: #ffffff;
+            border: 1px solid #444;
+            padding: 5px;
+        }
+        QTabWidget {
+            background-color: #24262e;
+        }
+    )";
+
+    setStyleSheet(darkStyle);
+
     // shortcuts
     new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_T), this, SLOT(addNewTab()));
     new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_W), this, [this]() {
@@ -72,17 +101,20 @@ void MainWindow::setupUI()
             closeTab(tabWidget->currentIndex());
         }
     });
+
+    // default vertical tab
+    tabOrientationSelector->setCurrentIndex(1);
 }
 
-void MainWindow::createWebView(QUrl url)
+void MainWindow::createWebView(const QUrl& url)
 {
     auto *webView = new QWebEngineView(this);
     webView->load(url);
 
-    // Connect the URL changed signal to update URL bar
+    // signal update URL bar
     connect(webView, &QWebEngineView::urlChanged, this, &MainWindow::updateUrlBar);
 
-    // Add the web view to the tab widget
+    // add the web view to the tab widget
     const int index = tabWidget->addTab(webView, "New Tab");
     tabWidget->setCurrentIndex(index);
 
@@ -104,14 +136,13 @@ void MainWindow::createWebView(QUrl url)
         }
     });
 
-    // Update favicon when it changes
+    // update favicon when it changes
     connect(webView, &QWebEngineView::iconChanged, this, [this, webView](const QIcon &icon) {
         if (const int index_ = tabWidget->indexOf(webView); index_ != -1) {
             tabWidget->setTabIcon(index_, icon);
         }
     });
 
-    // Give focus to the web view
     webView->setFocus();
 }
 
@@ -172,33 +203,23 @@ void MainWindow::addNewTab(const QUrl &url)
 
 void MainWindow::closeTab(const int index)
 {
-    // Ensure we keep at least one tab open
+    // keep at least one tab open
     if (tabWidget->count() <= 1) {
         QMessageBox::information(this, "Cannot Close Tab", "Cannot close the last tab. Application would exit instead.");
         return;
     }
 
-    // Get the widget at the index
     const QWidget *widget = tabWidget->widget(index);
-
-    // Remove the tab
     tabWidget->removeTab(index);
 
-    // Delete the widget to free resources
     delete widget;
 }
 
 void MainWindow::changeTabOrientation(int index)
 {
     int orientation = tabOrientationSelector->itemData(index).toInt();
-
-    if (orientation == Qt::Horizontal) {
-        tabWidget->setTabPosition(QTabWidget::North);
-    } else {
-        tabWidget->setTabPosition(QTabWidget::West);
-    }
-
     currentTabOrientation = orientation;
+    tabWidget->setTabBarOrientation(static_cast<Qt::Orientation>(orientation));
 }
 
 void MainWindow::tabChanged(const int index)

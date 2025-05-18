@@ -4,12 +4,13 @@
 #include <QMainWindow>
 #include <QWebEngineView>
 #include <QLineEdit>
-#include <QTabWidget>
 #include <QComboBox>
 #include <QVector>
 #include <QUrl>
+#include <QStyleOptionTab>
+#include <QPainter>
 
-class TabWidget;
+#include "tab.h"
 
 class MainWindow final : public QMainWindow
 {
@@ -30,7 +31,7 @@ private slots:
     void tabChanged(int index);
 
 private:
-    QTabWidget *tabWidget;
+    TabWidget *tabWidget;
     QLineEdit *urlBar;
     QToolBar *navigationBar;
     QComboBox *tabOrientationSelector;
@@ -38,7 +39,7 @@ private:
     int currentTabOrientation = Qt::Horizontal;
 
     void setupUI();
-    void createWebView(QUrl url = QUrl("https://www.google.com"));
+    void createWebView(const QUrl& url = QUrl("https://www.google.com"));
     QWebEngineView* currentWebView() const;
 };
 
