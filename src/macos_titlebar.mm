@@ -199,6 +199,8 @@ void MacOSTitleBar::setupToolbar(MainWindow* mainWindow) {
         // Configure window for custom title bar
         nsWindow.titlebarAppearsTransparent = YES;
         [nsWindow setStyleMask:[nsWindow styleMask] | NSWindowStyleMaskFullSizeContentView];
+        nsWindow.titleVisibility = NSWindowTitleHidden;
+        nsWindow.backgroundColor = [NSColor clearColor];
 
         // Get close button and title bar view
         NSButton* closeButton = [nsWindow standardWindowButton:NSWindowCloseButton];
