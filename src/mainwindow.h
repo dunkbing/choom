@@ -11,6 +11,7 @@
 
 #include "title_bar.h"
 #include "command_palette.h"
+#include "webview_container.h"
 
 class MainWindow final : public QMainWindow
 {
@@ -41,6 +42,7 @@ private slots:
 private:
     QStackedWidget *contentStack;
     QVector<QWebEngineView *> webViews;
+    QVector<WebViewContainer *> webViewContainers;
     QWidget *sidebarWidget;
     QVBoxLayout *sidebarLayout;
     QVBoxLayout *tabsLayout;

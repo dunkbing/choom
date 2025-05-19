@@ -10,6 +10,8 @@
 #include <QMouseEvent>
 #include <QToolButton>
 #include <QScrollArea>
+#include <QWebEngineSettings>
+#include <QWebEngineProfile>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -18,6 +20,13 @@ MainWindow::MainWindow(QWidget *parent)
     commandPalette = new CommandPalette(this);
     connect(commandPalette, &CommandPalette::urlSelected, this, &MainWindow::handleCommandPaletteUrl);
     addNewTab();
+    // web engine settings
+    const QWebEngineProfile* profile = QWebEngineProfile::defaultProfile();
+    QWebEngineSettings *settings = profile->settings();
+    settings->setAttribute(QWebEngineSettings::ScrollAnimatorEnabled, true);
+    settings->setAttribute(QWebEngineSettings::PlaybackRequiresUserGesture, false);
+    settings->setAttribute(QWebEngineSettings::WebGLEnabled, true);
+    settings->setAttribute(QWebEngineSettings::Accelerated2dCanvasEnabled, true);
 }
 
 void MainWindow::setupUI()
@@ -65,6 +74,7 @@ void MainWindow::setupUI()
     // Create the content stacked widget
     contentStack = new QStackedWidget(this);
     contentStack->setObjectName("contentStack");
+    contentStack->setContentsMargins(8, 8, 8, 8);
 
     // Add sidebar and content stack to container
     containerLayout->addWidget(sidebarWidget);
@@ -155,8 +165,7 @@ void MainWindow::setupUI()
     });
 }
 
-void MainWindow::setupSidebar()
-{
+void MainWindow::setupSidebar() {
     // Create sidebar widget
     sidebarWidget = new QWidget(this);
     sidebarWidget->setObjectName("sidebarWidget");
@@ -206,8 +215,7 @@ void MainWindow::setupSidebar()
     sidebarLayout->addWidget(scrollArea);
 }
 
-void MainWindow::setupIcons()
-{
+void MainWindow::setupIcons() {
     // Create navigation button row
     auto* navButtonLayout = new QHBoxLayout();
     navButtonLayout->setSpacing(5);
@@ -286,19 +294,30 @@ void MainWindow::updateTabButtons() {
     }
 }
 
-void MainWindow::createWebView(const QUrl& url)
-{
-    auto* webView = new QWebEngineView(this);
+void MainWindow::createWebView(const QUrl& url) {
+    auto* webView = new QWebEngineView();
     webView->setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
+
+    // Optimize WebView performance
+    webView->setAttribute(Qt::WA_OpaquePaintEvent, true);
+    webView->setAttribute(Qt::WA_NoSystemBackground, true);
+    webView->page()->setBackgroundColor(QColor("#ffffff"));
+
+    // Load the URL
     webView->load(url);
     webViews.append(webView);
-    contentStack->addWidget(webView);
+
+    // Create a lightweight container for the webView
+    auto* container = new WebViewContainer(webView, this);
+    webViewContainers.append(container);
+
+    // Add the container to the content stack
+    contentStack->addWidget(container);
 
     // Set as current tab
     currentTabIndex = webViews.size() - 1;
-    contentStack->setCurrentWidget(webView);
+    contentStack->setCurrentWidget(container);
 
-    // signal update URL bar
     connect(webView, &QWebEngineView::urlChanged, this, &MainWindow::updateUrlBar);
 
     // Update tab title when the page title changes
@@ -316,14 +335,11 @@ void MainWindow::createWebView(const QUrl& url)
         updateTabButtons();
     });
 
-    // Update the sidebar tabs
     updateTabButtons();
-
     webView->setFocus();
 }
 
-QWebEngineView* MainWindow::currentWebView() const
-{
+QWebEngineView* MainWindow::currentWebView() const {
     if (webViews.isEmpty() || currentTabIndex < 0 || currentTabIndex >= webViews.size()) {
         return nullptr;
     }
@@ -374,13 +390,11 @@ void MainWindow::showCommandPalette() const {
     }
 }
 
-void MainWindow::handleCommandPaletteUrl(const QUrl &url)
-{
+void MainWindow::handleCommandPaletteUrl(const QUrl &url) {
     addNewTab(url);
 }
 
-void MainWindow::addNewTab(const QUrl &url)
-{
+void MainWindow::addNewTab(const QUrl &url) {
     if (url == QUrl("https://www.google.com") && sender() == addTabButton) {
         showCommandPalette();
         return;
@@ -389,17 +403,18 @@ void MainWindow::addNewTab(const QUrl &url)
     createWebView(url);
 }
 
-void MainWindow::closeTab(const int index)
-{
+void MainWindow::closeTab(const int index) {
     // keep at least one tab open
     if (webViews.count() <= 1) {
         QMessageBox::information(this, "Cannot Close Tab", "Cannot close the last tab. Application would exit instead.");
         return;
     }
 
-    QWebEngineView* webView = webViews.takeAt(index);
-    contentStack->removeWidget(webView);
-    delete webView;
+    WebViewContainer* container = webViewContainers.takeAt(index);
+    contentStack->removeWidget(container);
+
+    // Delete the container which owns the webView
+    delete container;
 
     // update current index
     if (currentTabIndex >= webViews.size()) {
@@ -408,20 +423,19 @@ void MainWindow::closeTab(const int index)
 
     // show the new current tab
     if (currentTabIndex >= 0 && currentTabIndex < webViews.size()) {
-        contentStack->setCurrentWidget(webViews[currentTabIndex]);
+        contentStack->setCurrentWidget(webViewContainers[currentTabIndex]);
 
-        QWebEngineView* view = webViews[currentTabIndex];
+        const QWebEngineView* view = webViews[currentTabIndex];
         urlBar->setText(Utils::createDisplayUrl(view->url()));
     }
 
     updateTabButtons();
 }
 
-void MainWindow::tabClicked(int index)
-{
+void MainWindow::tabClicked(const int index) {
     if (index != currentTabIndex && index >= 0 && index < webViews.size()) {
         currentTabIndex = index;
-        contentStack->setCurrentWidget(webViews[index]);
+        contentStack->setCurrentWidget(webViewContainers[index]);
 
         // Update URL bar
         QWebEngineView* view = webViews[index];

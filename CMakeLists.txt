@@ -26,6 +26,8 @@ set(PROJECT_SOURCES
         src/command_palette.cpp
         src/command_palette.h
         src/macos_titlebar.h
+        src/webview_container.cpp
+        src/webview_container.h
 )
 
 # Add macOS-specific files
