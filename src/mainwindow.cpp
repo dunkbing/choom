@@ -83,7 +83,6 @@ void MainWindow::setupUI()
 
     // window props
     resize(1024, 768);
-    setWindowTitle("My Browser");
 
     // dark theme
     QString darkStyle = R"(
@@ -303,11 +302,6 @@ void MainWindow::createWebView(const QUrl& url)
     connect(webView, &QWebEngineView::titleChanged, this, [this, webView](const QString &title) {
         int index = webViews.indexOf(webView);
         if (index != -1) {
-            // Update window title for the current tab
-            if (currentTabIndex == index) {
-                setWindowTitle(title + " - My Browser");
-            }
-
             // Update tab buttons
             updateTabButtons();
         }
@@ -415,13 +409,6 @@ void MainWindow::closeTab(const int index)
 
         QWebEngineView* view = webViews[currentTabIndex];
         urlBar->setText(Utils::createDisplayUrl(view->url()));
-
-        QString title = view->title();
-        if (!title.isEmpty()) {
-            setWindowTitle(title + " - My Browser");
-        } else {
-            setWindowTitle("My Browser");
-        }
     }
 
     updateTabButtons();
@@ -436,13 +423,6 @@ void MainWindow::tabClicked(int index)
         // Update URL bar
         QWebEngineView* view = webViews[index];
         urlBar->setText(Utils::createDisplayUrl(view->url()));
-
-        QString title = view->title();
-        if (!title.isEmpty()) {
-            setWindowTitle(title + " - My Browser");
-        } else {
-            setWindowTitle("My Browser");
-        }
 
         updateTabButtons();
     }
