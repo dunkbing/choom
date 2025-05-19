@@ -194,6 +194,7 @@ HoverButton *createToolbarButton(SEL action, id target, NSRect frame, NSString *
 void MacOSTitleBar::setupToolbar(MainWindow *mainWindow) {
     // Setup delayed initialization to ensure the window is fully created
     QTimer::singleShot(100, [mainWindow]() {
+        mainWindow->setUnifiedTitleAndToolBarOnMac(true);
         // Get NSWindow
         NSWindow *nsWindow = getNSWindowFromMainWindow(mainWindow);
         if (!nsWindow) {

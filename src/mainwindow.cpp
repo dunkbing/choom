@@ -89,7 +89,6 @@ void MainWindow::setupUI() {
 
     containerLayout->addLayout(mainLayout, 1);
     setCentralWidget(containerWidget);
-    MacOSTitleBar::hideWindowTitleBar(this);
 
     // window props
     resize(1024, 768);
