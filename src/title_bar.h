@@ -7,15 +7,14 @@
 
 #include <QWidget>
 
-class TitleBar : public QWidget
-{
+class TitleBar : public QWidget {
     Q_OBJECT
 
 public:
     explicit TitleBar(QWidget *parent = nullptr);
 
-    signals:
-        void minimizeClicked();
+signals:
+    void minimizeClicked();
     void maximizeClicked();
     void closeClicked();
 
@@ -28,4 +27,4 @@ private:
     QAction *closeAction;
 };
 
-#endif //TITLE_BAR_H
+#endif // TITLE_BAR_H

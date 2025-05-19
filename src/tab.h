@@ -5,11 +5,10 @@
 #ifndef TAB_H
 #define TAB_H
 
-#include <QTabWidget>
 #include <QTabBar>
+#include <QTabWidget>
 
-class TabBar : public QTabBar
-{
+class TabBar : public QTabBar {
     Q_OBJECT
 public:
     explicit TabBar(QWidget *parent = nullptr);
@@ -19,8 +18,7 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 };
 
-class TabWidget : public QTabWidget
-{
+class TabWidget : public QTabWidget {
     Q_OBJECT
 public:
     explicit TabWidget(QWidget *parent = nullptr);
@@ -30,4 +28,4 @@ private:
     TabBar *customTabBar;
 };
 
-#endif //TAB_H
+#endif // TAB_H

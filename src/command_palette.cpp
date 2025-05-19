@@ -5,16 +5,14 @@
 #include "command_palette.h"
 #include "utils.h"
 
-#include <QPushButton>
 #include <QApplication>
-#include <QShowEvent>
-#include <QLabel>
-#include <QIcon>
 #include <QDebug>
+#include <QIcon>
+#include <QLabel>
+#include <QPushButton>
+#include <QShowEvent>
 
-CommandPalette::CommandPalette(QWidget *parent)
-    : QDialog(parent)
-{
+CommandPalette::CommandPalette(QWidget *parent) : QDialog(parent) {
     setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
     setAttribute(Qt::WA_TranslucentBackground);
 
@@ -36,8 +34,7 @@ CommandPalette::CommandPalette(QWidget *parent)
 
 CommandPalette::~CommandPalette() = default;
 
-void CommandPalette::initializeUI()
-{
+void CommandPalette::initializeUI() {
     // Set up size
     resize(600, 400);
 
@@ -96,8 +93,7 @@ void CommandPalette::initializeUI()
     layout->addWidget(websiteList);
 }
 
-void CommandPalette::initializeWebsites()
-{
+void CommandPalette::initializeWebsites() {
     websites["notion"] = Website("Notion", "notion.com", ":/icons/assets/notion.png");
     websites["x"] = Website("X", "x.com/zen_browser", ":/icons/assets/x.png");
     websites["reddit"] = Website("Reddit", "reddit.com/r/zen_browser", ":/icons/assets/reddit.png");
@@ -180,8 +176,7 @@ void CommandPalette::addWebsiteToList(const Website &website) const {
     item->setData(Qt::UserRole, website.url);
 }
 
-void CommandPalette::updateListFromFilter(const QString &filter)
-{
+void CommandPalette::updateListFromFilter(const QString &filter) {
     websiteList->clear();
 
     QString lowercaseFilter = filter.toLower();
@@ -222,14 +217,13 @@ void CommandPalette::updateListFromFilter(const QString &filter)
     }
 }
 
-void CommandPalette::filterWebsites(const QString &text)
-{
+void CommandPalette::filterWebsites(const QString &text) {
     updateListFromFilter(text);
 }
 
-void CommandPalette::selectWebsite(QListWidgetItem *item)
-{
-    if (!item) return;
+void CommandPalette::selectWebsite(QListWidgetItem *item) {
+    if (!item)
+        return;
 
     QString urlString = item->data(Qt::UserRole).toString();
     QUrl url = createUrl(urlString);
@@ -238,13 +232,11 @@ void CommandPalette::selectWebsite(QListWidgetItem *item)
     accept();
 }
 
-void CommandPalette::itemActivated(QListWidgetItem *item)
-{
+void CommandPalette::itemActivated(QListWidgetItem *item) {
     selectWebsite(item);
 }
 
-QUrl CommandPalette::getSelectedUrl() const
-{
+QUrl CommandPalette::getSelectedUrl() const {
     QListWidgetItem *item = websiteList->currentItem();
     if (!item) {
         return createUrl(searchBox->text());
@@ -253,8 +245,7 @@ QUrl CommandPalette::getSelectedUrl() const
     return createUrl(item->data(Qt::UserRole).toString());
 }
 
-QUrl CommandPalette::createUrl(const QString &input) const
-{
+QUrl CommandPalette::createUrl(const QString &input) const {
     // If the input is empty, return Google
     if (input.isEmpty()) {
         return QUrl("https://www.google.com");
@@ -269,14 +260,12 @@ QUrl CommandPalette::createUrl(const QString &input) const
     return QUrl("https://www.google.com/search?q=" + input);
 }
 
-void CommandPalette::showEvent(QShowEvent *event)
-{
+void CommandPalette::showEvent(QShowEvent *event) {
     QDialog::showEvent(event);
 
     // Center the palette on the screen
     QRect screenGeometry = QApplication::primaryScreen()->geometry();
-    move((screenGeometry.width() - width()) / 2,
-         (screenGeometry.height() - height()) / 3);
+    move((screenGeometry.width() - width()) / 2, (screenGeometry.height() - height()) / 3);
 
     // Clear and focus the search box
     searchBox->clear();
@@ -286,10 +275,9 @@ void CommandPalette::showEvent(QShowEvent *event)
     updateListFromFilter("");
 }
 
-bool CommandPalette::eventFilter(QObject *watched, QEvent *event)
-{
+bool CommandPalette::eventFilter(QObject *watched, QEvent *event) {
     if (event->type() == QEvent::KeyPress) {
-        auto keyEvent = static_cast<QKeyEvent*>(event);
+        auto keyEvent = static_cast<QKeyEvent *>(event);
 
         // Handle Enter/Return key
         if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {

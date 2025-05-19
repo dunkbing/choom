@@ -13,7 +13,7 @@ TitleBar::TitleBar(QWidget *parent) : QWidget(parent) {
     setFixedHeight(30);
 
     // Create layout
-    auto* layout = new QHBoxLayout(this);
+    auto *layout = new QHBoxLayout(this);
     layout->setContentsMargins(5, 0, 5, 0);
     layout->setSpacing(0);
 
@@ -21,9 +21,9 @@ TitleBar::TitleBar(QWidget *parent) : QWidget(parent) {
     layout->addStretch();
 
     // window control buttons
-    auto* minimizeButton = new QToolButton(this);
-    auto* maximizeButton = new QToolButton(this);
-    auto* closeButton = new QToolButton(this);
+    auto *minimizeButton = new QToolButton(this);
+    auto *maximizeButton = new QToolButton(this);
+    auto *closeButton = new QToolButton(this);
 
     minimizeButton->setFixedSize(30, 30);
     maximizeButton->setFixedSize(30, 30);
@@ -33,9 +33,12 @@ TitleBar::TitleBar(QWidget *parent) : QWidget(parent) {
     maximizeButton->setText("🗖");
     closeButton->setText("✕");
 
-    minimizeButton->setStyleSheet("QToolButton { border: none; color: #aaa; } QToolButton:hover { background-color: #444; }");
-    maximizeButton->setStyleSheet("QToolButton { border: none; color: #aaa; } QToolButton:hover { background-color: #444; }");
-    closeButton->setStyleSheet("QToolButton { border: none; color: #aaa; } QToolButton:hover { background-color: #e81123; color: white; }");
+    minimizeButton->setStyleSheet(
+        "QToolButton { border: none; color: #aaa; } QToolButton:hover { background-color: #444; }");
+    maximizeButton->setStyleSheet(
+        "QToolButton { border: none; color: #aaa; } QToolButton:hover { background-color: #444; }");
+    closeButton->setStyleSheet("QToolButton { border: none; color: #aaa; } QToolButton:hover { "
+                               "background-color: #e81123; color: white; }");
 
     connect(minimizeButton, &QToolButton::clicked, this, &TitleBar::minimizeClicked);
     connect(maximizeButton, &QToolButton::clicked, this, &TitleBar::maximizeClicked);

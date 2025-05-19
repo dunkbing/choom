@@ -5,9 +5,9 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <QColor>
 #include <QIcon>
 #include <QString>
-#include <QColor>
 #include <QUrl>
 
 namespace Utils {
@@ -17,21 +17,21 @@ namespace Utils {
      * @param color Color to apply to the SVG (default: white)
      * @return QIcon created from the SVG resource
      */
-    QIcon createIconFromResource(const QString& resourcePath, const QColor& color = Qt::white);
+    QIcon createIconFromResource(const QString &resourcePath, const QColor &color = Qt::white);
 
     /**
      * Normalizes a URL by ensuring it has a scheme
      * @param url URL string to normalize
      * @return Normalized URL with scheme
      */
-    QString normalizeUrl(const QString& url);
+    QString normalizeUrl(const QString &url);
 
     /**
      * Creates a simplified display version of a URL
      * @param url URL to simplify
      * @return Simplified URL for display
      */
-    QString createDisplayUrl(const QUrl& url);
+    QString createDisplayUrl(const QUrl &url);
 
     /**
      * Truncates a string if it exceeds maxLength
@@ -40,7 +40,7 @@ namespace Utils {
      * @param ellipsis String to append when truncating (default: "...")
      * @return Truncated string, or original if short enough
      */
-    QString truncateString(const QString& str, int maxLength, const QString& ellipsis = "...");
-}
+    QString truncateString(const QString &str, int maxLength, const QString &ellipsis = "...");
+} // namespace Utils
 
 #endif // UTILS_H

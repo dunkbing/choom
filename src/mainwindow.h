@@ -2,19 +2,16 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QWebEngineView>
-#include <QVector>
-#include <QUrl>
 #include <QPainter>
 #include <QPoint>
 #include <QStackedWidget>
+#include <QVector>
 
-#include "title_bar.h"
 #include "command_palette.h"
+#include "title_bar.h"
 #include "webview_container.h"
 
-class MainWindow final : public QMainWindow
-{
+class MainWindow final : public QMainWindow {
     Q_OBJECT
 
 public:

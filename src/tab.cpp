@@ -7,24 +7,21 @@
 #include <QStyleOptionTab>
 #include <QStylePainter>
 
-TabBar::TabBar(QWidget *parent) : QTabBar(parent)
-{
+TabBar::TabBar(QWidget *parent) : QTabBar(parent) {
     setDrawBase(false);
     setElideMode(Qt::ElideRight);
     setExpanding(false);
     setDocumentMode(true);
 }
 
-QSize TabBar::tabSizeHint(const int index) const
-{
+QSize TabBar::tabSizeHint(const int index) const {
     QSize size = QTabBar::tabSizeHint(index);
     size.setWidth(200);
     size.setHeight(40);
     return size;
 }
 
-void TabBar::paintEvent(QPaintEvent *event)
-{
+void TabBar::paintEvent(QPaintEvent *event) {
     QStylePainter painter(this);
     QStyleOptionTab opt;
 
@@ -35,9 +32,9 @@ void TabBar::paintEvent(QPaintEvent *event)
 
         // Set background color based on selected state
         if (i == currentIndex()) {
-            painter.fillRect(rect, QColor(60, 63, 77));  // Dark blue-gray when selected
+            painter.fillRect(rect, QColor(60, 63, 77)); // Dark blue-gray when selected
         } else {
-            painter.fillRect(rect, QColor(36, 38, 46));  // Darker background for unselected
+            painter.fillRect(rect, QColor(36, 38, 46)); // Darker background for unselected
         }
 
         // Draw icon
@@ -52,7 +49,7 @@ void TabBar::paintEvent(QPaintEvent *event)
 
         // Draw text
         QRect textRect = rect;
-        textRect.setLeft(rect.left() + 36);  // Leave space for icon
+        textRect.setLeft(rect.left() + 36); // Leave space for icon
 
         painter.setPen(i == currentIndex() ? Qt::white : QColor(200, 200, 200));
         painter.drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, tabText(i));
@@ -60,8 +57,7 @@ void TabBar::paintEvent(QPaintEvent *event)
 }
 
 // CustomTabWidget implementation
-TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
-{
+TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent) {
     customTabBar = new TabBar(this);
     setTabBar(customTabBar);
 
@@ -74,8 +70,7 @@ TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
     setupSidebar();
 }
 
-void TabWidget::setupSidebar()
-{
+void TabWidget::setupSidebar() {
     setTabPosition(West);
     setStyleSheet(R"(
         QTabWidget::pane {

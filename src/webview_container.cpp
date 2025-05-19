@@ -4,10 +4,8 @@
 
 #include "webview_container.h"
 
-WebViewContainer::WebViewContainer(QWebEngineView* webView, QWidget* parent)
-    : QFrame(parent)
-    , m_webView(webView)
-{
+WebViewContainer::WebViewContainer(QWebEngineView *webView, QWidget *parent)
+    : QFrame(parent), m_webView(webView) {
     m_layout = new QVBoxLayout(this);
     m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->setSpacing(0);
@@ -21,7 +19,6 @@ WebViewContainer::WebViewContainer(QWebEngineView* webView, QWidget* parent)
     m_layout->addWidget(webView);
 }
 
-QWebEngineView* WebViewContainer::webView() const
-{
+QWebEngineView *WebViewContainer::webView() const {
     return m_webView;
 }

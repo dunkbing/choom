@@ -1,27 +1,26 @@
 #include "mainwindow.h"
 #include "macos_titlebar.h"
 #include "utils.h"
-#include <QVBoxLayout>
-#include <QLabel>
 #include <QApplication>
+#include <QLabel>
 #include <QMessageBox>
+#include <QMouseEvent>
+#include <QScrollArea>
 #include <QShortcut>
 #include <QStylePainter>
-#include <QMouseEvent>
 #include <QToolButton>
-#include <QScrollArea>
-#include <QWebEngineSettings>
+#include <QVBoxLayout>
 #include <QWebEngineProfile>
+#include <QWebEngineSettings>
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-{
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     setupUI();
     commandPalette = new CommandPalette(this);
-    connect(commandPalette, &CommandPalette::urlSelected, this, &MainWindow::handleCommandPaletteUrl);
+    connect(commandPalette, &CommandPalette::urlSelected, this,
+            &MainWindow::handleCommandPaletteUrl);
     addNewTab();
     // web engine settings
-    const QWebEngineProfile* profile = QWebEngineProfile::defaultProfile();
+    const QWebEngineProfile *profile = QWebEngineProfile::defaultProfile();
     QWebEngineSettings *settings = profile->settings();
     settings->setAttribute(QWebEngineSettings::ScrollAnimatorEnabled, true);
     settings->setAttribute(QWebEngineSettings::PlaybackRequiresUserGesture, false);
@@ -29,8 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
     settings->setAttribute(QWebEngineSettings::Accelerated2dCanvasEnabled, true);
 }
 
-void MainWindow::setupUI()
-{
+void MainWindow::setupUI() {
 #ifdef Q_OS_MACOS
     titleBar = nullptr; // no custom title bar on macOS
     MacOSTitleBar::setupToolbar(this);
@@ -53,16 +51,16 @@ void MainWindow::setupUI()
     setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
 
     // Create a container widget for the title bar and main content
-    auto* containerWidget = new QWidget(this);
+    auto *containerWidget = new QWidget(this);
     containerWidget->setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
-    auto* containerLayout = new QHBoxLayout(containerWidget);
+    auto *containerLayout = new QHBoxLayout(containerWidget);
     containerLayout->setContentsMargins(0, 0, 0, 0);
     containerLayout->setSpacing(0);
 
     setupSidebar();
 
     // Create main content layout
-    auto* mainLayout = new QVBoxLayout();
+    auto *mainLayout = new QVBoxLayout();
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
@@ -80,9 +78,9 @@ void MainWindow::setupUI()
     containerLayout->addWidget(sidebarWidget);
 
     // Add main layout and tab content to container
-    auto* contentWidget = new QWidget();
+    auto *contentWidget = new QWidget();
     contentWidget->setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
-    auto* contentLayout = new QVBoxLayout(contentWidget);
+    auto *contentLayout = new QVBoxLayout(contentWidget);
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(0);
     contentLayout->addWidget(contentStack);
@@ -111,7 +109,7 @@ void MainWindow::setupUI()
             selection-background-color: #4d78cc;
         }
         QToolButton {
-            background-color: #36383e;
+            background-color: transparent;
             border: none;
             border-radius: 4px;
             padding: 5px;
@@ -192,7 +190,7 @@ void MainWindow::setupSidebar() {
     sidebarLayout->addSpacing(15);
 
     // Add "New Tab" button that looks like tab buttons
-    auto* newTabButton = new QToolButton(sidebarWidget);
+    auto *newTabButton = new QToolButton(sidebarWidget);
     newTabButton->setText("New Tab");
     newTabButton->setIcon(Utils::createIconFromResource(":/icons/assets/plus.svg"));
     newTabButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
@@ -202,7 +200,7 @@ void MainWindow::setupSidebar() {
     sidebarLayout->addWidget(newTabButton);
 
     // Create scrollable tabs container
-    auto* scrollArea = new QScrollArea(sidebarWidget);
+    auto *scrollArea = new QScrollArea(sidebarWidget);
     scrollArea->setWidgetResizable(true);
     scrollArea->setFrameShape(QFrame::NoFrame);
     scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -217,8 +215,8 @@ void MainWindow::setupSidebar() {
     sidebarLayout->addWidget(scrollArea);
 }
 
-QToolButton* MainWindow::createTabButton(const QString& title, int index) {
-    auto* button = new QToolButton(tabsContainer);
+QToolButton *MainWindow::createTabButton(const QString &title, int index) {
+    auto *button = new QToolButton(tabsContainer);
     button->setText(title);
     button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     button->setCheckable(true);
@@ -227,43 +225,40 @@ QToolButton* MainWindow::createTabButton(const QString& title, int index) {
     // full width
     button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    QWebEngineView* view = webViews[index];
+    QWebEngineView *view = webViews[index];
     if (!view->icon().isNull()) {
         button->setIcon(view->icon());
     }
 
-    auto* closeButton = new QToolButton(button);
-    closeButton->setIcon(Utils::createIconFromResource(":/icons/assets/close.svg", QColor(200, 200, 200)));
+    auto *closeButton = new QToolButton(button);
+    closeButton->setIcon(
+        Utils::createIconFromResource(":/icons/assets/close.svg", QColor(200, 200, 200)));
     closeButton->setFixedSize(16, 16);
     closeButton->setStyleSheet("QToolButton { background: transparent; border: none; }");
     closeButton->setCursor(Qt::ArrowCursor);
 
-    auto* layout = new QHBoxLayout(button);
+    auto *layout = new QHBoxLayout(button);
     layout->setContentsMargins(5, 0, 5, 0);
     layout->setSpacing(5);
     layout->addStretch();
     layout->addWidget(closeButton);
 
-    connect(button, &QToolButton::clicked, this, [this, index]() {
-        tabClicked(index);
-    });
-    connect(closeButton, &QToolButton::clicked, this, [this, index]() {
-        closeTab(index);
-    });
+    connect(button, &QToolButton::clicked, this, [this, index]() { tabClicked(index); });
+    connect(closeButton, &QToolButton::clicked, this, [this, index]() { closeTab(index); });
 
     return button;
 }
 
 void MainWindow::updateTabButtons() {
-    while (QLayoutItem* item = tabsLayout->takeAt(0)) {
-        if (QWidget* widget = item->widget()) {
+    while (QLayoutItem *item = tabsLayout->takeAt(0)) {
+        if (QWidget *widget = item->widget()) {
             widget->deleteLater();
         }
         delete item;
     }
 
     for (int i = 0; i < webViews.size(); ++i) {
-        QWebEngineView* view = webViews[i];
+        QWebEngineView *view = webViews[i];
         QString title = view->title();
         if (title.isEmpty()) {
             title = "New Tab";
@@ -271,7 +266,7 @@ void MainWindow::updateTabButtons() {
             title = Utils::truncateString(title, 20);
         }
 
-        QToolButton* button = createTabButton(title, i);
+        QToolButton *button = createTabButton(title, i);
         button->setChecked(i == currentTabIndex);
         button->setProperty("selected", i == currentTabIndex);
 
@@ -279,8 +274,8 @@ void MainWindow::updateTabButtons() {
     }
 }
 
-void MainWindow::createWebView(const QUrl& url) {
-    auto* webView = new QWebEngineView();
+void MainWindow::createWebView(const QUrl &url) {
+    auto *webView = new QWebEngineView();
     webView->setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
 
     // Optimize WebView performance
@@ -292,7 +287,7 @@ void MainWindow::createWebView(const QUrl& url) {
     webViews.append(webView);
 
     // Create a lightweight container for the webView
-    auto* container = new WebViewContainer(webView, this);
+    auto *container = new WebViewContainer(webView, this);
     webViewContainers.append(container);
 
     // Add the container to the content stack
@@ -323,7 +318,7 @@ void MainWindow::createWebView(const QUrl& url) {
     webView->setFocus();
 }
 
-QWebEngineView* MainWindow::currentWebView() const {
+QWebEngineView *MainWindow::currentWebView() const {
     if (webViews.isEmpty() || currentTabIndex < 0 || currentTabIndex >= webViews.size()) {
         return nullptr;
     }
@@ -342,7 +337,7 @@ void MainWindow::navigateToUrl() const {
 
 void MainWindow::updateUrlBar(const QUrl &url) const {
     // Only update if the sender is the current tab
-    if (auto *webView = qobject_cast<QWebEngineView*>(sender()); webView == currentWebView()) {
+    if (auto *webView = qobject_cast<QWebEngineView *>(sender()); webView == currentWebView()) {
         urlBar->setText(Utils::createDisplayUrl(url));
     }
 }
@@ -385,11 +380,12 @@ void MainWindow::addNewTab(const QUrl &url) {
 void MainWindow::closeTab(const int index) {
     // keep at least one tab open
     if (webViews.count() <= 1) {
-        QMessageBox::information(this, "Cannot Close Tab", "Cannot close the last tab. Application would exit instead.");
+        QMessageBox::information(this, "Cannot Close Tab",
+                                 "Cannot close the last tab. Application would exit instead.");
         return;
     }
 
-    WebViewContainer* container = webViewContainers.takeAt(index);
+    WebViewContainer *container = webViewContainers.takeAt(index);
     contentStack->removeWidget(container);
 
     // Delete the container which owns the webView
@@ -404,7 +400,7 @@ void MainWindow::closeTab(const int index) {
     if (currentTabIndex >= 0 && currentTabIndex < webViews.size()) {
         contentStack->setCurrentWidget(webViewContainers[currentTabIndex]);
 
-        const QWebEngineView* view = webViews[currentTabIndex];
+        const QWebEngineView *view = webViews[currentTabIndex];
         urlBar->setText(Utils::createDisplayUrl(view->url()));
     }
 
@@ -417,7 +413,7 @@ void MainWindow::tabClicked(const int index) {
         contentStack->setCurrentWidget(webViewContainers[index]);
 
         // Update URL bar
-        QWebEngineView* view = webViews[index];
+        QWebEngineView *view = webViews[index];
         urlBar->setText(Utils::createDisplayUrl(view->url()));
 
         updateTabButtons();

@@ -8,9 +8,9 @@
 #include <QDialog>
 #include <QLineEdit>
 #include <QListWidget>
-#include <QVBoxLayout>
-#include <QUrl>
 #include <QMap>
+#include <QUrl>
+#include <QVBoxLayout>
 
 class Website {
 public:
@@ -18,14 +18,13 @@ public:
     QString url;
     QString icon;
 
-    Website(const QString& name, const QString& url, const QString& icon)
+    Website(const QString &name, const QString &url, const QString &icon)
         : name(name), url(url), icon(icon) {}
 
     Website() : name(""), url(""), icon("") {}
 };
 
-class CommandPalette : public QDialog
-{
+class CommandPalette : public QDialog {
     Q_OBJECT
 
 public:
@@ -36,8 +35,8 @@ public:
     void showEvent(QShowEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
 
-    signals:
-        void urlSelected(const QUrl &url);
+signals:
+    void urlSelected(const QUrl &url);
 
 private slots:
     void filterWebsites(const QString &text);

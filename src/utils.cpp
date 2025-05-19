@@ -3,14 +3,14 @@
 //
 #include "utils.h"
 
-#include <QSvgRenderer>
-#include <QPainter>
-#include <QFile>
-#include <QUrl>
 #include <QDebug>
+#include <QFile>
+#include <QPainter>
+#include <QSvgRenderer>
+#include <QUrl>
 
 namespace Utils {
-    QIcon createIconFromResource(const QString& resourcePath, const QColor& color) {
+    QIcon createIconFromResource(const QString &resourcePath, const QColor &color) {
         if (resourcePath.endsWith(".png", Qt::CaseInsensitive)) {
             QPixmap pixmap(resourcePath);
             if (pixmap.isNull()) {
@@ -56,14 +56,14 @@ namespace Utils {
         return QIcon(pixmap);
     }
 
-    QString normalizeUrl(const QString& url) {
+    QString normalizeUrl(const QString &url) {
         if (!url.isEmpty() && !url.contains("://")) {
             return "https://" + url;
         }
         return url;
     }
 
-    QString createDisplayUrl(const QUrl& url) {
+    QString createDisplayUrl(const QUrl &url) {
         QString displayUrl = url.host();
         if (displayUrl.isEmpty()) {
             displayUrl = url.toString();
@@ -73,10 +73,10 @@ namespace Utils {
         return displayUrl;
     }
 
-    QString truncateString(const QString& str, int maxLength, const QString& ellipsis) {
+    QString truncateString(const QString &str, int maxLength, const QString &ellipsis) {
         if (str.length() <= maxLength) {
             return str;
         }
         return str.left(maxLength - ellipsis.length()) + ellipsis;
     }
-}
+} // namespace Utils
