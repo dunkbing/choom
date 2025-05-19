@@ -173,7 +173,7 @@ void MainWindow::setupSidebar() {
     sidebarLayout = new QVBoxLayout(sidebarWidget);
 
 #ifdef Q_OS_MACOS
-    sidebarLayout->setContentsMargins(10, 30, 10, 10);
+    sidebarLayout->setContentsMargins(10, 45, 10, 10);
 #else
     sidebarLayout->setContentsMargins(10, 10, 10, 10);
 #endif
