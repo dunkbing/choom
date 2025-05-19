@@ -45,6 +45,7 @@ void MainWindow::setupUI()
 
     // Create a container widget for the title bar and main content
     auto* containerWidget = new QWidget(this);
+    containerWidget->setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
     auto* containerLayout = new QHBoxLayout(containerWidget);
     containerLayout->setContentsMargins(0, 0, 0, 0);
     containerLayout->setSpacing(0);
@@ -70,6 +71,7 @@ void MainWindow::setupUI()
 
     // Add main layout and tab content to container
     auto* contentWidget = new QWidget();
+    contentWidget->setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
     auto* contentLayout = new QVBoxLayout(contentWidget);
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(0);
@@ -287,6 +289,7 @@ void MainWindow::updateTabButtons() {
 void MainWindow::createWebView(const QUrl& url)
 {
     auto* webView = new QWebEngineView(this);
+    webView->setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
     webView->load(url);
     webViews.append(webView);
     contentStack->addWidget(webView);
