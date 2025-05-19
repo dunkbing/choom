@@ -74,7 +74,7 @@ void MainWindow::setupUI()
     // Create the content stacked widget
     contentStack = new QStackedWidget(this);
     contentStack->setObjectName("contentStack");
-    contentStack->setContentsMargins(8, 8, 8, 8);
+    contentStack->setContentsMargins(0, 0, 0, 0);
 
     // Add sidebar and content stack to container
     containerLayout->addWidget(sidebarWidget);
@@ -194,11 +194,6 @@ void MainWindow::setupSidebar() {
     // Add spacing before tabs
     sidebarLayout->addSpacing(15);
 
-    // Add a label for tabs section
-    auto* tabsLabel = new QLabel("Open Tabs", sidebarWidget);
-    tabsLabel->setStyleSheet("font-weight: bold;");
-    sidebarLayout->addWidget(tabsLabel);
-
     // Create scrollable tabs container
     auto* scrollArea = new QScrollArea(sidebarWidget);
     scrollArea->setWidgetResizable(true);
@@ -301,7 +296,6 @@ void MainWindow::createWebView(const QUrl& url) {
     // Optimize WebView performance
     webView->setAttribute(Qt::WA_OpaquePaintEvent, true);
     webView->setAttribute(Qt::WA_NoSystemBackground, true);
-    webView->page()->setBackgroundColor(QColor("#ffffff"));
 
     // Load the URL
     webView->load(url);
