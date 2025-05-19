@@ -47,7 +47,6 @@ private:
     QVBoxLayout *sidebarLayout;
     QVBoxLayout *tabsLayout;
     QWidget *tabsContainer;
-    QToolButton *addTabButton;
     TitleBar *titleBar;
     CommandPalette *commandPalette;
     bool isDragging = false;
@@ -56,7 +55,6 @@ private:
 
     void setupUI();
     void setupSidebar();
-    void setupIcons();
     void createWebView(const QUrl &url = QUrl("https://www.google.com"));
     void updateTabButtons();
     QToolButton *createTabButton(const QString &title, int index);

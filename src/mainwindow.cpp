@@ -181,9 +181,6 @@ void MainWindow::setupSidebar() {
 #endif
     sidebarLayout->setSpacing(10);
 
-    // Setup navigation buttons
-    setupIcons();
-
     // Add URL display (simplified)
     urlBar = new QLineEdit(sidebarWidget);
     urlBar->setPlaceholderText("Enter URL...");
@@ -193,6 +190,16 @@ void MainWindow::setupSidebar() {
 
     // Add spacing before tabs
     sidebarLayout->addSpacing(15);
+
+    // Add "New Tab" button that looks like tab buttons
+    auto* newTabButton = new QToolButton(sidebarWidget);
+    newTabButton->setText("New Tab");
+    newTabButton->setIcon(Utils::createIconFromResource(":/icons/assets/plus.svg"));
+    newTabButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    newTabButton->setProperty("class", "TabButton");
+    newTabButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    connect(newTabButton, &QToolButton::clicked, this, [this]() { addNewTab(); });
+    sidebarLayout->addWidget(newTabButton);
 
     // Create scrollable tabs container
     auto* scrollArea = new QScrollArea(sidebarWidget);
@@ -208,23 +215,6 @@ void MainWindow::setupSidebar() {
 
     scrollArea->setWidget(tabsContainer);
     sidebarLayout->addWidget(scrollArea);
-}
-
-void MainWindow::setupIcons() {
-    // Create navigation button row
-    auto* navButtonLayout = new QHBoxLayout();
-    navButtonLayout->setSpacing(5);
-
-    addTabButton = new QToolButton(sidebarWidget);
-    addTabButton->setIcon(Utils::createIconFromResource(":/icons/assets/plus.svg"));
-    addTabButton->setToolTip("New Tab");
-    addTabButton->setFixedSize(32, 32);
-    connect(addTabButton, &QToolButton::clicked, this, [this]() { addNewTab(); });
-
-    navButtonLayout->addWidget(addTabButton);
-    navButtonLayout->addStretch(1);
-
-    sidebarLayout->addLayout(navButtonLayout);
 }
 
 QToolButton* MainWindow::createTabButton(const QString& title, int index) {
@@ -389,11 +379,6 @@ void MainWindow::handleCommandPaletteUrl(const QUrl &url) {
 }
 
 void MainWindow::addNewTab(const QUrl &url) {
-    if (url == QUrl("https://www.google.com") && sender() == addTabButton) {
-        showCommandPalette();
-        return;
-    }
-
     createWebView(url);
 }
 
