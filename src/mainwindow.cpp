@@ -137,8 +137,8 @@ void MainWindow::setupUI() {
             text-align: left;
             padding-left: 10px;
             border-radius: 4px;
-            min-height: 40px;
-            max-height: 40px;
+            min-height: 25px;
+            max-height: 25px;
         }
         .TabButton[selected="true"] {
             background-color: #454750;
@@ -191,7 +191,7 @@ void MainWindow::setupSidebar() {
 
     // Add "New Tab" button that looks like tab buttons
     auto *newTabButton = new QToolButton(sidebarWidget);
-    newTabButton->setText("New Tab");
+    newTabButton->setText(" New Tab");
     newTabButton->setIcon(Utils::createIconFromResource(":/icons/assets/plus.svg"));
     newTabButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     newTabButton->setProperty("class", "TabButton");
@@ -207,8 +207,8 @@ void MainWindow::setupSidebar() {
 
     tabsContainer = new QWidget(scrollArea);
     tabsLayout = new QVBoxLayout(tabsContainer);
-    tabsLayout->setContentsMargins(0, 5, 0, 5);
-    tabsLayout->setSpacing(5);
+    tabsLayout->setContentsMargins(0, 2, 0, 2);
+    tabsLayout->setSpacing(2);
     tabsLayout->setAlignment(Qt::AlignTop);
 
     scrollArea->setWidget(tabsContainer);
@@ -217,7 +217,7 @@ void MainWindow::setupSidebar() {
 
 QToolButton *MainWindow::createTabButton(const QString &title, int index) {
     auto *button = new QToolButton(tabsContainer);
-    button->setText(title);
+    button->setText(" " + title);
     button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     button->setCheckable(true);
     button->setProperty("class", "TabButton");
@@ -233,9 +233,7 @@ QToolButton *MainWindow::createTabButton(const QString &title, int index) {
     auto *closeButton = new QToolButton(button);
     closeButton->setIcon(
         Utils::createIconFromResource(":/icons/assets/close.svg", QColor(200, 200, 200)));
-    closeButton->setFixedSize(16, 16);
     closeButton->setStyleSheet("QToolButton { background: transparent; border: none; }");
-    closeButton->setCursor(Qt::ArrowCursor);
 
     auto *layout = new QHBoxLayout(button);
     layout->setContentsMargins(5, 0, 5, 0);
