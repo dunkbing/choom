@@ -3,22 +3,19 @@
 //
 
 #include "webview_container.h"
+#include "qmlwebview.h"
 
-WebViewContainer::WebViewContainer(QWebEngineView *webView, QWidget *parent)
+WebViewContainer::WebViewContainer(QmlWebView *webView, QWidget *parent)
     : QFrame(parent), m_webView(webView) {
     m_layout = new QVBoxLayout(this);
-    m_layout->setContentsMargins(0, 0, 0, 0);
+    m_layout->setContentsMargins(8, 8, 8, 8);
     m_layout->setSpacing(0);
 
-    // Take ownership of the webView
-    if (webView->parent() != this) {
-        webView->setParent(this);
-    }
+    m_layout->addWidget(m_webView);
 
-    // Add the webView to layout
-    m_layout->addWidget(webView);
+    qDebug() << "WebViewContainer created";
 }
 
-QWebEngineView *WebViewContainer::webView() const {
+QmlWebView *WebViewContainer::webView() const {
     return m_webView;
 }

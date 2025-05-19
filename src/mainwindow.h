@@ -8,6 +8,7 @@
 #include <QVector>
 
 #include "command_palette.h"
+#include "qmlwebview.h"
 #include "title_bar.h"
 #include "webview_container.h"
 
@@ -24,7 +25,7 @@ public:
     void *macosUrlField = nullptr; // NSTextField pointer
     // friend class MacOSTitleBar;    // Allow MacOSTitleBar to access our private members
 #endif
-    QWebEngineView *currentWebView() const;
+    QmlWebView *currentWebView() const;
     void navigateToUrl() const;
     QLineEdit *urlBar;
 
@@ -38,7 +39,7 @@ private slots:
 
 private:
     QStackedWidget *contentStack;
-    QVector<QWebEngineView *> webViews;
+    QVector<QmlWebView *> webViews;
     QVector<WebViewContainer *> webViewContainers;
     QWidget *sidebarWidget;
     QVBoxLayout *sidebarLayout;

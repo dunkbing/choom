@@ -9,8 +9,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets WebEngineWidgets Svg)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets WebEngineWidgets Svg)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets WebEngineWidgets Svg QuickWidgets Quick)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets WebEngineWidgets Svg QuickWidgets Quick)
 
 set(PROJECT_SOURCES
         src/main.cpp
@@ -23,11 +23,14 @@ set(PROJECT_SOURCES
         src/utils.h
         src/utils.cpp
         resources.qrc
+        qml_resources.qrc
         src/command_palette.cpp
         src/command_palette.h
         src/macos_titlebar.h
         src/webview_container.cpp
         src/webview_container.h
+        src/qmlwebview.cpp
+        src/qmlwebview.h
 )
 
 # Add macOS-specific files
@@ -63,6 +66,8 @@ endif()
 target_link_libraries(browser PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(browser PRIVATE Qt${QT_VERSION_MAJOR}::WebEngineWidgets)
 target_link_libraries(browser PRIVATE Qt${QT_VERSION_MAJOR}::Svg)
+target_link_libraries(browser PRIVATE Qt${QT_VERSION_MAJOR}::QuickWidgets)
+target_link_libraries(browser PRIVATE Qt${QT_VERSION_MAJOR}::Quick)
 
 # Link macOS frameworks if building for Apple
 if(APPLE)

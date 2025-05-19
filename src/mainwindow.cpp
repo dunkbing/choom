@@ -1,10 +1,10 @@
 #include "mainwindow.h"
 #include "macos_titlebar.h"
+#include "qmlwebview.h"
 #include "utils.h"
 #include <QApplication>
 #include <QLabel>
 #include <QMessageBox>
-#include <QMouseEvent>
 #include <QScrollArea>
 #include <QShortcut>
 #include <QStylePainter>
@@ -224,7 +224,7 @@ QToolButton *MainWindow::createTabButton(const QString &title, int index) {
     // full width
     button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    QWebEngineView *view = webViews[index];
+    QmlWebView *view = webViews[index];
     if (!view->icon().isNull()) {
         button->setIcon(view->icon());
     }
@@ -255,7 +255,7 @@ void MainWindow::updateTabButtons() {
     }
 
     for (int i = 0; i < webViews.size(); ++i) {
-        QWebEngineView *view = webViews[i];
+        QmlWebView *view = webViews[i];
         QString title = view->title();
         if (title.isEmpty()) {
             title = "New Tab";
@@ -272,7 +272,7 @@ void MainWindow::updateTabButtons() {
 }
 
 void MainWindow::createWebView(const QUrl &url) {
-    auto *webView = new QWebEngineView();
+    auto *webView = new QmlWebView();
     webView->setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
 
     // Optimize WebView performance
@@ -294,10 +294,10 @@ void MainWindow::createWebView(const QUrl &url) {
     currentTabIndex = webViews.size() - 1;
     contentStack->setCurrentWidget(container);
 
-    connect(webView, &QWebEngineView::urlChanged, this, &MainWindow::updateUrlBar);
+    connect(webView, &QmlWebView::urlChanged, this, &MainWindow::updateUrlBar);
 
     // Update tab title when the page title changes
-    connect(webView, &QWebEngineView::titleChanged, this, [this, webView](const QString &title) {
+    connect(webView, &QmlWebView::titleChanged, this, [this, webView](const QString &title) {
         int index = webViews.indexOf(webView);
         if (index != -1) {
             // Update tab buttons
@@ -306,7 +306,7 @@ void MainWindow::createWebView(const QUrl &url) {
     });
 
     // update favicon when it changes
-    connect(webView, &QWebEngineView::iconChanged, this, [this, webView](const QIcon &icon) {
+    connect(webView, &QmlWebView::iconChanged, this, [this, webView](const QIcon &icon) {
         // Force update of tab buttons when icon changes
         updateTabButtons();
     });
@@ -315,7 +315,7 @@ void MainWindow::createWebView(const QUrl &url) {
     webView->setFocus();
 }
 
-QWebEngineView *MainWindow::currentWebView() const {
+QmlWebView *MainWindow::currentWebView() const {
     if (webViews.isEmpty() || currentTabIndex < 0 || currentTabIndex >= webViews.size()) {
         return nullptr;
     }
@@ -323,7 +323,7 @@ QWebEngineView *MainWindow::currentWebView() const {
 }
 
 void MainWindow::navigateToUrl() const {
-    QWebEngineView *webView = currentWebView();
+    QmlWebView *webView = currentWebView();
     if (!webView) {
         return;
     }
@@ -334,27 +334,27 @@ void MainWindow::navigateToUrl() const {
 
 void MainWindow::updateUrlBar(const QUrl &url) const {
     // Only update if the sender is the current tab
-    if (auto *webView = qobject_cast<QWebEngineView *>(sender()); webView == currentWebView()) {
+    if (auto *webView = qobject_cast<QmlWebView *>(sender()); webView == currentWebView()) {
         urlBar->setText(Utils::createDisplayUrl(url));
     }
 }
 
 void MainWindow::goBack() const {
-    QWebEngineView *webView = currentWebView();
+    QmlWebView *webView = currentWebView();
     if (webView) {
         webView->back();
     }
 }
 
 void MainWindow::goForward() const {
-    QWebEngineView *webView = currentWebView();
+    QmlWebView *webView = currentWebView();
     if (webView) {
         webView->forward();
     }
 }
 
 void MainWindow::reload() const {
-    QWebEngineView *webView = currentWebView();
+    QmlWebView *webView = currentWebView();
     if (webView) {
         webView->reload();
     }
@@ -397,7 +397,7 @@ void MainWindow::closeTab(const int index) {
     if (currentTabIndex >= 0 && currentTabIndex < webViews.size()) {
         contentStack->setCurrentWidget(webViewContainers[currentTabIndex]);
 
-        const QWebEngineView *view = webViews[currentTabIndex];
+        const QmlWebView *view = webViews[currentTabIndex];
         urlBar->setText(Utils::createDisplayUrl(view->url()));
     }
 
@@ -410,7 +410,7 @@ void MainWindow::tabClicked(const int index) {
         contentStack->setCurrentWidget(webViewContainers[index]);
 
         // Update URL bar
-        QWebEngineView *view = webViews[index];
+        QmlWebView *view = webViews[index];
         urlBar->setText(Utils::createDisplayUrl(view->url()));
 
         updateTabButtons();
