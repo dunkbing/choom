@@ -122,7 +122,6 @@ void MainWindow::setupUI() {
         }
         #sidebarWidget {
             background-color: #24262e;
-            border-right: 1px solid #444;
         }
         #urlDisplay {
             background-color: #36383e;
