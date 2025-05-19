@@ -8,7 +8,7 @@ Item {
     id: root
 
     // Properties
-    property string url: "https://google.com"
+    property string url: ""
     property alias webView: webEngineView
 
     // Signals with unique names to avoid conflicts
@@ -19,14 +19,12 @@ Item {
     Rectangle {
         id: container
         anchors.fill: parent
-        color: "#24262e"
+        color: "transparent"
         radius: 8
 
         layer.enabled: true
         layer.effect: OpacityMask {
-            id: opacityMaskInstance
             maskSource: Rectangle {
-                id: maskedRect
                 width: container.width
                 height: container.height
                 radius: container.radius
