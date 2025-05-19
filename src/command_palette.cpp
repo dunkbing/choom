@@ -105,7 +105,7 @@ void CommandPalette::addWebsiteToList(const Website &website) const {
     // Create a widget to hold the icon and text
     auto itemWidget = new QWidget();
     itemWidget->setObjectName("paletteItemWidget");
-    itemWidget->setAttribute(Qt::WA_TranslucentBackground); // Make widget background transparent
+    itemWidget->setAttribute(Qt::WA_TranslucentBackground);
 
     auto itemLayout = new QHBoxLayout(itemWidget);
     itemLayout->setContentsMargins(10, 8, 10, 8);

@@ -47,7 +47,6 @@ void MainWindow::setupUI() {
     });
     connect(titleBar, &TitleBar::closeClicked, this, &MainWindow::close);
 #endif
-    setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
 
     // Create a container widget for the title bar and main content
