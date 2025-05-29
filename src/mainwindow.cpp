@@ -8,6 +8,7 @@
 #include <QScrollArea>
 #include <QShortcut>
 #include <QStylePainter>
+#include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
 #include <QWebEngineProfile>
@@ -19,6 +20,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     connect(commandPalette, &CommandPalette::urlSelected, this,
             &MainWindow::handleCommandPaletteUrl);
     addNewTab();
+
+    // Ensure the first tab is displayed properly
+    QTimer::singleShot(0, this, [this]() { updateTabButtons(); });
+
     // web engine settings
     const QWebEngineProfile *profile = QWebEngineProfile::defaultProfile();
     QWebEngineSettings *settings = profile->settings();
@@ -177,7 +182,7 @@ void MainWindow::setupSidebar() {
 #endif
     sidebarLayout->setSpacing(10);
 
-    // Add URL display (simplified)
+    // Add URL display
     urlBar = new QLineEdit(sidebarWidget);
     urlBar->setPlaceholderText("Enter URL...");
     urlBar->setObjectName("urlDisplay");
@@ -187,7 +192,7 @@ void MainWindow::setupSidebar() {
     // Add spacing before tabs
     sidebarLayout->addSpacing(15);
 
-    // Add "New Tab" button that looks like tab buttons
+    // Add "New Tab" button
     auto *newTabButton = new QToolButton(sidebarWidget);
     newTabButton->setText(" New Tab");
     newTabButton->setIcon(Utils::createIconFromResource(":/icons/assets/plus.svg"));
@@ -197,77 +202,41 @@ void MainWindow::setupSidebar() {
     connect(newTabButton, &QToolButton::clicked, this, [this]() { addNewTab(); });
     sidebarLayout->addWidget(newTabButton);
 
-    // Create scrollable tabs container
-    auto *scrollArea = new QScrollArea(sidebarWidget);
-    scrollArea->setWidgetResizable(true);
-    scrollArea->setFrameShape(QFrame::NoFrame);
-    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // Create QML tabs widget
+    tabsWidget = new QmlTabsWidget(sidebarWidget);
+    tabsWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    tabsWidget->setMinimumHeight(100);
+    connect(tabsWidget, &QmlTabsWidget::tabClicked, this, &MainWindow::tabClicked);
+    connect(tabsWidget, &QmlTabsWidget::tabCloseClicked, this, &MainWindow::closeTab);
 
-    tabsContainer = new QWidget(scrollArea);
-    tabsLayout = new QVBoxLayout(tabsContainer);
-    tabsLayout->setContentsMargins(0, 2, 0, 2);
-    tabsLayout->setSpacing(2);
-    tabsLayout->setAlignment(Qt::AlignTop);
-
-    scrollArea->setWidget(tabsContainer);
-    sidebarLayout->addWidget(scrollArea);
-}
-
-QToolButton *MainWindow::createTabButton(const QString &title, int index) {
-    auto *button = new QToolButton(tabsContainer);
-    button->setText(" " + title);
-    button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    button->setCheckable(true);
-    button->setProperty("class", "TabButton");
-    button->setProperty("index", index);
-    // full width
-    button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-
-    QmlWebView *view = webViews[index];
-    if (!view->icon().isNull()) {
-        button->setIcon(view->icon());
-    }
-
-    auto *closeButton = new QToolButton(button);
-    closeButton->setIcon(
-        Utils::createIconFromResource(":/icons/assets/close.svg", QColor(200, 200, 200)));
-    closeButton->setStyleSheet("QToolButton { background: transparent; border: none; }");
-
-    auto *layout = new QHBoxLayout(button);
-    layout->setContentsMargins(5, 0, 5, 0);
-    layout->setSpacing(5);
-    layout->addStretch();
-    layout->addWidget(closeButton);
-
-    connect(button, &QToolButton::clicked, this, [this, index]() { tabClicked(index); });
-    connect(closeButton, &QToolButton::clicked, this, [this, index]() { closeTab(index); });
-
-    return button;
+    sidebarLayout->addWidget(tabsWidget, 1); // Give it stretch factor of 1
 }
 
 void MainWindow::updateTabButtons() {
-    while (QLayoutItem *item = tabsLayout->takeAt(0)) {
-        if (QWidget *widget = item->widget()) {
-            widget->deleteLater();
-        }
-        delete item;
-    }
+    qDebug() << "updateTabButtons called, webViews count:" << webViews.size();
+
+    tabsWidget->clearTabs();
 
     for (int i = 0; i < webViews.size(); ++i) {
         QmlWebView *view = webViews[i];
         QString title = view->title();
         if (title.isEmpty()) {
             title = "New Tab";
-        } else {
-            title = Utils::truncateString(title, 20);
         }
 
-        QToolButton *button = createTabButton(title, i);
-        button->setChecked(i == currentTabIndex);
-        button->setProperty("selected", i == currentTabIndex);
+        qDebug() << "Adding tab" << i << "with title:" << title;
 
-        tabsLayout->addWidget(button);
+        // Use the favicon URL if available, otherwise QML will use the default
+        QString iconUrl = view->faviconUrl();
+        if (!iconUrl.isEmpty()) {
+            iconUrl = "image://favicon/" + iconUrl; // Reconstruct the image provider URL
+        }
+
+        bool isSelected = (i == currentTabIndex);
+        tabsWidget->addTab(title, iconUrl, isSelected);
     }
+
+    qDebug() << "updateTabButtons completed";
 }
 
 void MainWindow::createWebView(const QUrl &url) {
@@ -310,7 +279,10 @@ void MainWindow::createWebView(const QUrl &url) {
         updateTabButtons();
     });
 
-    updateTabButtons();
+    // Update tabs immediately if tabsWidget is ready
+    if (tabsWidget) {
+        updateTabButtons();
+    }
     webView->setFocus();
 }
 
@@ -381,7 +353,10 @@ void MainWindow::closeTab(const int index) {
         return;
     }
 
+    // Remove from both lists
     WebViewContainer *container = webViewContainers.takeAt(index);
+    QmlWebView *webView = webViews.takeAt(index);
+
     contentStack->removeWidget(container);
 
     // Delete the container which owns the webView

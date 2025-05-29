@@ -8,6 +8,7 @@
 #include <QVector>
 
 #include "command_palette.h"
+#include "qmltabswidget.h"
 #include "qmlwebview.h"
 #include "title_bar.h"
 #include "webview_container.h"
@@ -23,7 +24,6 @@ public:
     void addNewTab(const QUrl &url = QUrl("https://www.google.com"));
 #ifdef Q_OS_MAC
     void *macosUrlField = nullptr; // NSTextField pointer
-    // friend class MacOSTitleBar;    // Allow MacOSTitleBar to access our private members
 #endif
     QmlWebView *currentWebView() const;
     void navigateToUrl() const;
@@ -31,7 +31,6 @@ public:
 
 private slots:
     void updateUrlBar(const QUrl &url) const;
-
     void showCommandPalette() const;
     void handleCommandPaletteUrl(const QUrl &url);
     void closeTab(int index);
@@ -43,8 +42,7 @@ private:
     QVector<WebViewContainer *> webViewContainers;
     QWidget *sidebarWidget;
     QVBoxLayout *sidebarLayout;
-    QVBoxLayout *tabsLayout;
-    QWidget *tabsContainer;
+    QmlTabsWidget *tabsWidget; // Replace tabsLayout and tabsContainer with this
     TitleBar *titleBar;
     CommandPalette *commandPalette;
     bool isDragging = false;
@@ -55,7 +53,6 @@ private:
     void setupSidebar();
     void createWebView(const QUrl &url = QUrl("https://www.google.com"));
     void updateTabButtons();
-    QToolButton *createTabButton(const QString &title, int index);
 };
 
 #endif // MAINWINDOW_H

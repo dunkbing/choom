@@ -20,6 +20,7 @@ public:
     QUrl url() const;
     QString title() const;
     QIcon icon() const;
+    QString faviconUrl() const; // Add this method
 
     void back();
     void forward();
@@ -42,6 +43,7 @@ private:
     QUrl m_currentUrl;
     QString m_currentTitle;
     QIcon m_currentIcon;
+    QString m_faviconUrl; // Add this member
 };
 
 #endif // QMLWEBVIEW_H

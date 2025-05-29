@@ -31,6 +31,8 @@ set(PROJECT_SOURCES
         src/webview_container.h
         src/qmlwebview.cpp
         src/qmlwebview.h
+        src/qmltabswidget.cpp
+        src/qmltabswidget.h
 )
 
 # Add macOS-specific files

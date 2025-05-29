@@ -1,4 +1,5 @@
 #include "qmlwebview.h"
+#include "utils.h"
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQuickItem>
@@ -95,8 +96,27 @@ void QmlWebView::handleTitleChanged(const QString &title) {
     emit titleChanged(title);
 }
 
+QString QmlWebView::faviconUrl() const {
+    return m_faviconUrl;
+}
+
 void QmlWebView::handleIconChanged(const QVariant &icon) {
-    // Convert QVariant to QIcon (this is simplified - you might need more conversion)
-    m_currentIcon = QIcon(); // In a real app, convert from QVariant
-    emit iconChanged(m_currentIcon);
+    QString iconString = icon.toString();
+
+    if (iconString.startsWith("image://favicon/")) {
+        // Extract and store the actual favicon URL
+        m_faviconUrl = iconString.mid(16); // Remove "image://favicon/" prefix
+
+        // For QML tabs, we'll use the original favicon URL
+        // The QML Image component can handle the image://favicon/ scheme directly
+        m_currentIcon = QIcon(); // Keep empty for now
+        emit iconChanged(m_currentIcon);
+    } else if (icon.canConvert<QIcon>()) {
+        m_currentIcon = icon.value<QIcon>();
+        emit iconChanged(m_currentIcon);
+    } else {
+        m_faviconUrl = "";
+        m_currentIcon = QIcon();
+        emit iconChanged(m_currentIcon);
+    }
 }
