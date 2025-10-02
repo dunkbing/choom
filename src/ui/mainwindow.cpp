@@ -14,6 +14,9 @@
 #include <QTabBar>
 #include <QMouseEvent>
 #include <QEvent>
+#include <QProgressDialog>
+#include <QTimer>
+#include <QtConcurrent>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     // Initialize connection storage
@@ -306,11 +309,27 @@ void MainWindow::setupSidebar() {
     connect(connectionTree, &QTreeView::customContextMenuRequested, this, &MainWindow::onTreeItemContextMenu);
     connect(connectionTree, &QTreeView::expanded, this, [this](const QModelIndex &index) {
         auto *item = dynamic_cast<TreeItem*>(treeModel->itemFromIndex(index));
+        if (!item) return;
+
+        // Handle connection node expansion
+        if (item->getType() == TreeItemType::Connection && !item->isLoaded()) {
+            treeModel->connectToDatabase(item);
+            return;
+        }
+
+        // Handle folder expansion
         if (item && !item->isLoaded() &&
             (item->getType() == TreeItemType::TablesFolder ||
              item->getType() == TreeItemType::ViewsFolder ||
              item->getType() == TreeItemType::SequencesFolder)) {
-            treeModel->loadFolderContents(item);
+            treeModel->loadFolderContentsAsync(item);
+        }
+    });
+
+    connect(treeModel, &ConnectionTreeModel::connectionFinished, this, [this](const QString &name, bool success, const QString &error) {
+        if (!success) {
+            QMessageBox::critical(this, "Connection Failed",
+                QString("Failed to connect to '%1':\n%2").arg(name).arg(error));
         }
     });
 
@@ -322,32 +341,64 @@ void MainWindow::addNewConnection() {
     if (dialog.exec() == QDialog::Accepted) {
         ConnectionConfig config = dialog.getConnectionConfig();
 
-        // Add connection to manager
-        ConnectionManager::instance().addConnection(config);
-
-        // Get the connection and try to connect
-        DatabaseConnection *conn = ConnectionManager::instance().getConnection(config.name);
-        if (conn) {
-            if (conn->connect()) {
-                // Save to storage
-                if (ConnectionStorage::instance().saveConnection(config)) {
-                    qDebug() << "Connection saved to storage:" << config.name;
-                } else {
-                    qWarning() << "Failed to save connection to storage:" << config.name;
-                }
-
-                // Add to tree
+        // Skip loading dialog for SQLite (it's fast)
+        if (config.type == DatabaseType::SQLite) {
+            ConnectionManager::instance().addConnection(config);
+            DatabaseConnection *conn = ConnectionManager::instance().getConnection(config.name);
+            if (conn && conn->connect()) {
+                ConnectionStorage::instance().saveConnection(config);
                 treeModel->addConnection(conn);
-
                 QMessageBox::information(this, "Success",
                     QString("Connected to '%1' successfully!").arg(config.name));
             } else {
                 QMessageBox::critical(this, "Connection Failed",
                     QString("Failed to connect to '%1':\n%2")
                         .arg(config.name)
-                        .arg(conn->getLastError()));
+                        .arg(conn ? conn->getLastError() : "Unknown error"));
             }
+            return;
         }
+
+        // Show loading dialog for MySQL/PostgreSQL
+        QProgressDialog *progress = new QProgressDialog("Connecting to database...", "Cancel", 0, 0, this);
+        progress->setWindowModality(Qt::WindowModal);
+        progress->setMinimumDuration(0);
+        progress->setCancelButton(nullptr);
+        progress->show();
+
+        // Connect in background thread
+        auto future = QtConcurrent::run([config]() -> QPair<bool, QString> {
+            ConnectionManager::instance().addConnection(config);
+            DatabaseConnection *conn = ConnectionManager::instance().getConnection(config.name);
+            if (conn && conn->connect()) {
+                ConnectionStorage::instance().saveConnection(config);
+                return QPair<bool, QString>(true, QString());
+            }
+            return QPair<bool, QString>(false, conn ? conn->getLastError() : "Unknown error");
+        });
+
+        auto *watcher = new QFutureWatcher<QPair<bool, QString>>(this);
+        connect(watcher, &QFutureWatcher<QPair<bool, QString>>::finished, this, [this, watcher, progress, config]() {
+            progress->close();
+            progress->deleteLater();
+
+            auto result = watcher->result();
+            if (result.first) {
+                DatabaseConnection *conn = ConnectionManager::instance().getConnection(config.name);
+                if (conn) {
+                    treeModel->addConnection(conn);
+                    QMessageBox::information(this, "Success",
+                        QString("Connected to '%1' successfully!").arg(config.name));
+                }
+            } else {
+                QMessageBox::critical(this, "Connection Failed",
+                    QString("Failed to connect to '%1':\n%2")
+                        .arg(config.name)
+                        .arg(result.second));
+            }
+            watcher->deleteLater();
+        });
+        watcher->setFuture(future);
     }
 }
 
@@ -361,11 +412,19 @@ void MainWindow::onTreeItemDoubleClicked(const QModelIndex &index) {
         // Load table data in a new tab
         QString connectionName = item->getConnectionName();
         QString tableName = item->text();
+        QString schemaName = item->getSchemaName();
+        QString databaseName = item->getDatabaseName();
 
-        // Get the actual database connection name to use
+        // Get the actual database connection to verify it's connected
         DatabaseConnection *conn = ConnectionManager::instance().getConnection(connectionName);
         if (conn && conn->isConnected()) {
-            openTableInTab(conn->getConnectionName(), tableName);
+            // For PostgreSQL, include schema in table name
+            QString fullTableName = tableName;
+            if (!schemaName.isEmpty()) {
+                fullTableName = QString("%1.%2").arg(schemaName, tableName);
+            }
+            // Use the simple connection name (not UUID-suffixed)
+            openTableInTab(connectionName, fullTableName, databaseName, schemaName);
         }
     }
 }
@@ -387,12 +446,13 @@ void MainWindow::onTreeItemContextMenu(const QPoint &pos) {
         QAction *sqlEditorAction = contextMenu.addAction("Open SQL Editor");
         connect(sqlEditorAction, &QAction::triggered, this, [this, item]() {
             // Get connection
-            DatabaseConnection *conn = ConnectionManager::instance().getConnection(item->getConnectionName());
+            QString connectionName = item->getConnectionName();
+            DatabaseConnection *conn = ConnectionManager::instance().getConnection(connectionName);
             if (conn && conn->isConnected()) {
                 // Set context based on item type
                 QString database = item->getDatabaseName();
                 QString schema = item->getSchemaName();
-                openSQLEditor(conn->getConnectionName(), database, schema);
+                openSQLEditor(connectionName, database, schema);
             }
         });
     }
@@ -462,8 +522,15 @@ void MainWindow::openSQLEditor(const QString &connectionName, const QString &dat
     tabWidget->setCurrentIndex(tabIndex);
 }
 
-void MainWindow::openTableInTab(const QString &connectionName, const QString &tableName) {
-    QString tabName = tableName;
+void MainWindow::openTableInTab(const QString &connectionName, const QString &tableName,
+                                 const QString &databaseName, const QString &schemaName) {
+    // Display just the table name in tab, but use full qualified name for query
+    QString displayName = tableName;
+    if (displayName.contains('.')) {
+        displayName = displayName.split('.').last();
+    }
+
+    QString tabName = displayName;
 
     // Check if tab already exists
     int existingTab = findTab(tabName);
@@ -474,7 +541,7 @@ void MainWindow::openTableInTab(const QString &connectionName, const QString &ta
 
     // Create new table viewer tab
     auto *tableViewer = new TableViewer(this);
-    tableViewer->loadTableData(connectionName, tableName);
+    tableViewer->loadTableData(connectionName, tableName, databaseName, schemaName);
     int tabIndex = tabWidget->addTab(tableViewer, tabName);
     tabWidget->setCurrentIndex(tabIndex);
 }
@@ -508,21 +575,10 @@ void MainWindow::loadSavedConnections() {
     qDebug() << "Loading" << savedConnections.size() << "saved connections";
 
     for (const ConnectionConfig &config : savedConnections) {
-        // Add connection to manager
+        // Add connection to manager (but don't connect yet)
         ConnectionManager::instance().addConnection(config);
 
-        // Get the connection and try to connect
-        DatabaseConnection *conn = ConnectionManager::instance().getConnection(config.name);
-        if (conn) {
-            if (conn->connect()) {
-                qDebug() << "Successfully connected to:" << config.name;
-                // Add to tree
-                treeModel->addConnection(conn);
-            } else {
-                qWarning() << "Failed to connect to saved connection:" << config.name
-                          << "-" << conn->getLastError();
-            }
-        }
+        // Add placeholder to tree - will connect when expanded
+        treeModel->addConnectionPlaceholder(config.name, config.type);
     }
-
 }

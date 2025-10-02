@@ -1,7 +1,9 @@
 #include "query_executor.h"
+#include "../database/connection_manager.h"
 #include <QElapsedTimer>
 #include <QSqlError>
 #include <QThread>
+#include <QDebug>
 
 QueryExecutor::QueryExecutor(QObject *parent)
     : QObject(parent) {
@@ -9,15 +11,40 @@ QueryExecutor::QueryExecutor(QObject *parent)
 
 ConnectionInfo QueryExecutor::getConnectionInfo(const QString &connectionName) {
     ConnectionInfo info;
-    QSqlDatabase db = QSqlDatabase::database(connectionName, false);
-    if (db.isValid()) {
-        info.driverName = db.driverName();
-        info.databaseName = db.databaseName();
-        info.hostName = db.hostName();
-        info.userName = db.userName();
-        info.password = db.password();
-        info.port = db.port();
-        info.connectOptions = db.connectOptions();
+
+    // Get the actual database connection from manager
+    DatabaseConnection *conn = ConnectionManager::instance().getConnection(connectionName);
+    if (conn && conn->isConnected()) {
+        ConnectionConfig config = conn->getConfig();
+
+        qDebug() << "Getting connection info for:" << connectionName << "Type:" << (int)config.type;
+
+        // Map database type to driver name
+        switch (config.type) {
+            case DatabaseType::SQLite:
+                info.driverName = "QSQLITE";
+                info.databaseName = config.filePath;
+                break;
+            case DatabaseType::MySQL:
+                info.driverName = "QMYSQL";
+                info.databaseName = config.database;
+                info.hostName = config.host;
+                info.port = config.port;
+                info.userName = config.username;
+                info.password = config.password;
+                break;
+            case DatabaseType::PostgreSQL:
+                info.driverName = "QPSQL";
+                info.databaseName = config.database;
+                info.hostName = config.host;
+                info.port = config.port;
+                info.userName = config.username;
+                info.password = config.password;
+                break;
+        }
+        qDebug() << "Connection info - Driver:" << info.driverName << "DB:" << info.databaseName;
+    } else {
+        qDebug() << "Connection not found or not connected:" << connectionName;
     }
     return info;
 }
@@ -38,11 +65,27 @@ QFuture<QueryResult> QueryExecutor::executeQuery(const QString &connectionName, 
     });
 }
 
-QFuture<QueryResult> QueryExecutor::executeTableQuery(const QString &connectionName, const QString &tableName, int limit, int offset) {
-    // Quote table name to handle special characters and reserved words
-    QString quotedTableName = QString("\"%1\"").arg(tableName);
+QFuture<QueryResult> QueryExecutor::executeTableQuery(const QString &connectionName, const QString &tableName,
+                                                       const QString &databaseName, const QString &schemaName,
+                                                       int limit, int offset) {
+    // Build fully qualified table name
+    QString qualifiedTableName;
+
+    // For PostgreSQL/MySQL with schema, table name may already be qualified (schema.table)
+    if (tableName.contains('.')) {
+        // Already qualified, just quote each part
+        QStringList parts = tableName.split('.');
+        for (QString &part : parts) {
+            part = QString("\"%1\"").arg(part);
+        }
+        qualifiedTableName = parts.join('.');
+    } else {
+        // Quote table name
+        qualifiedTableName = QString("\"%1\"").arg(tableName);
+    }
+
     QString query = QString("SELECT * FROM %1 LIMIT %2 OFFSET %3")
-                        .arg(quotedTableName)
+                        .arg(qualifiedTableName)
                         .arg(limit)
                         .arg(offset);
     return executeQuery(connectionName, query);

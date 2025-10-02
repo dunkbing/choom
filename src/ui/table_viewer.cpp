@@ -2,6 +2,7 @@
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QFutureWatcher>
+#include <QStackedLayout>
 
 TableViewer::TableViewer(QWidget *parent)
     : QWidget(parent), currentPage(0), pageSize(1000), totalRows(0) {
@@ -28,6 +29,11 @@ void TableViewer::setupUI() {
 
     mainLayout->addWidget(infoBar);
 
+    // Create stacked widget to switch between table and loading spinner
+    auto *stackedWidget = new QWidget(this);
+    auto *stackedLayout = new QStackedLayout(stackedWidget);
+    stackedLayout->setContentsMargins(0, 0, 0, 0);
+
     // Table view
     tableView = new QTableView(this);
     tableModel = new QStandardItemModel(this);
@@ -36,8 +42,17 @@ void TableViewer::setupUI() {
     tableView->setAlternatingRowColors(true);
     tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    stackedLayout->addWidget(tableView);
 
-    mainLayout->addWidget(tableView, 1);
+    // Loading spinner (QML)
+    loadingSpinner = new QQuickWidget(this);
+    loadingSpinner->setSource(QUrl("qrc:/qml/src/ui/Spinner.qml"));
+    loadingSpinner->setResizeMode(QQuickWidget::SizeRootObjectToView);
+    loadingSpinner->setAttribute(Qt::WA_AlwaysStackOnTop);
+    loadingSpinner->setClearColor(QColor("#1e1e1e"));
+    stackedLayout->addWidget(loadingSpinner);
+
+    mainLayout->addWidget(stackedWidget, 1);
 
     // Pagination controls
     auto *paginationBar = new QWidget(this);
@@ -63,17 +78,21 @@ void TableViewer::setupUI() {
     mainLayout->addWidget(paginationBar);
 }
 
-void TableViewer::loadTableData(const QString &connectionName, const QString &tableName) {
+void TableViewer::loadTableData(const QString &connectionName, const QString &tableName,
+                                 const QString &databaseName, const QString &schemaName) {
     currentConnectionName = connectionName;
     currentTableName = tableName;
     currentPage = 0;
 
+    showLoadingSpinner();
+
     QFuture<QueryResult> future = queryExecutor->executeTableQuery(
-        connectionName, tableName, pageSize, currentPage * pageSize
+        connectionName, tableName, databaseName, schemaName, pageSize, currentPage * pageSize
     );
 
     auto *watcher = new QFutureWatcher<QueryResult>(this);
     connect(watcher, &QFutureWatcher<QueryResult>::finished, this, [this, watcher]() {
+        hideLoadingSpinner();
         displayQueryResult(watcher->result());
         watcher->deleteLater();
     });
@@ -136,4 +155,15 @@ void TableViewer::updatePaginationInfo() {
 
     // Enable next button if we got full page of results
     nextButton->setEnabled(totalRows >= pageSize);
+}
+
+void TableViewer::showLoadingSpinner() {
+    loadingSpinner->show();
+    loadingSpinner->raise();
+    tableView->hide();
+}
+
+void TableViewer::hideLoadingSpinner() {
+    loadingSpinner->hide();
+    tableView->show();
 }

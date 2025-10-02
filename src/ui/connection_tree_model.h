@@ -3,7 +3,9 @@
 
 #include <QStandardItemModel>
 #include <QStandardItem>
+#include <QTimer>
 #include "../database/database_connection.h"
+#include "spinner_icon.h"
 
 enum class TreeItemType {
     Connection,
@@ -48,11 +50,20 @@ public:
     explicit ConnectionTreeModel(QObject *parent = nullptr);
 
     void addConnection(DatabaseConnection *connection);
+    void addConnectionPlaceholder(const QString &connectionName, DatabaseType dbType);
     void removeConnection(const QString &connectionName);
     void refreshConnection(const QString &connectionName);
     void loadFolderContents(TreeItem *folderItem);
+    void loadFolderContentsAsync(TreeItem *folderItem);
+    void connectToDatabase(TreeItem *connectionItem);
 
     TreeItem* findConnectionItem(const QString &connectionName);
+
+signals:
+    void folderLoadingStarted(TreeItem *folderItem);
+    void folderLoadingFinished(TreeItem *folderItem);
+    void connectionStarted(const QString &connectionName);
+    void connectionFinished(const QString &connectionName, bool success, const QString &error);
 
 private:
     void loadConnectionStructure(TreeItem *connectionItem, DatabaseConnection *connection);
@@ -62,9 +73,15 @@ private:
 
     QIcon getIconForDatabaseType(DatabaseType type);
     QIcon getIconForType(TreeItemType type);
+    void startSpinner(TreeItem *item);
+    void stopSpinner(TreeItem *item);
 
     // Store connections for lazy loading
     QMap<QString, DatabaseConnection*> connections;
+
+    // Spinner
+    SpinnerIcon *spinnerIcon;
+    QMap<TreeItem*, bool> spinningItems;  // items currently showing spinner
 };
 
 #endif // CONNECTION_TREE_MODEL_H

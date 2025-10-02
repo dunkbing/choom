@@ -54,6 +54,7 @@ public:
     QString getLastError() const { return lastError; }
     QString getConnectionName() const { return db.connectionName(); }
     QSqlDatabase getDatabase() const { return db; }
+    ConnectionConfig getConfig() const { return config; }
 
 signals:
     void connected();

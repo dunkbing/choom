@@ -33,7 +33,8 @@ private:
     void setupUI();
     void setupSidebar();
     void loadSavedConnections();
-    void openTableInTab(const QString &connectionName, const QString &tableName);
+    void openTableInTab(const QString &connectionName, const QString &tableName,
+                        const QString &databaseName = QString(), const QString &schemaName = QString());
     int findTab(const QString &tabName);
 
     QSplitter *splitter;

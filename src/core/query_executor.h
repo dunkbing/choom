@@ -36,7 +36,9 @@ public:
 
     // Async query execution
     QFuture<QueryResult> executeQuery(const QString &connectionName, const QString &query);
-    QFuture<QueryResult> executeTableQuery(const QString &connectionName, const QString &tableName, int limit = 1000, int offset = 0);
+    QFuture<QueryResult> executeTableQuery(const QString &connectionName, const QString &tableName,
+                                           const QString &databaseName = QString(), const QString &schemaName = QString(),
+                                           int limit = 1000, int offset = 0);
 
 signals:
     void queryStarted();

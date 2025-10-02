@@ -1,9 +1,24 @@
 #include "connection_tree_model.h"
+#include "../database/connection_manager.h"
 #include <QIcon>
+#include <QtConcurrent>
+#include <QFutureWatcher>
+#include <QPainter>
+#include <QPixmap>
 
 ConnectionTreeModel::ConnectionTreeModel(QObject *parent)
     : QStandardItemModel(parent) {
     setHorizontalHeaderLabels({"Connections"});
+
+    // Create reusable spinner icon
+    spinnerIcon = new SpinnerIcon(this);
+    connect(spinnerIcon, &SpinnerIcon::iconUpdated, this, [this](const QIcon &icon) {
+        // Update all spinning items with the new icon frame
+        for (auto it = spinningItems.begin(); it != spinningItems.end(); ++it) {
+            TreeItem *item = it.key();
+            item->setIcon(icon);
+        }
+    });
 }
 
 void ConnectionTreeModel::addConnection(DatabaseConnection *connection) {
@@ -20,6 +35,85 @@ void ConnectionTreeModel::addConnection(DatabaseConnection *connection) {
 
     // Load structure (now with lazy loading for folders)
     loadConnectionStructure(connectionItem, connection);
+}
+
+void ConnectionTreeModel::addConnectionPlaceholder(const QString &connectionName, DatabaseType dbType) {
+    auto *connectionItem = new TreeItem(connectionName, TreeItemType::Connection);
+    connectionItem->setConnectionName(connectionName);
+    connectionItem->setIcon(getIconForDatabaseType(dbType));
+    connectionItem->setLoaded(false);
+
+    // Add a placeholder child to make it expandable
+    auto *placeholder = new TreeItem("Not connected", TreeItemType::Connection);
+    connectionItem->appendRow(placeholder);
+
+    appendRow(connectionItem);
+}
+
+void ConnectionTreeModel::connectToDatabase(TreeItem *connectionItem) {
+    if (!connectionItem || connectionItem->getType() != TreeItemType::Connection) {
+        return;
+    }
+
+    QString connectionName = connectionItem->getConnectionName();
+    emit connectionStarted(connectionName);
+
+    // Update placeholder to show connecting with animated spinner
+    if (connectionItem->rowCount() > 0) {
+        auto *placeholder = dynamic_cast<TreeItem*>(connectionItem->child(0));
+        if (placeholder) {
+            placeholder->setText("Connecting...");
+            startSpinner(placeholder);
+        }
+    }
+
+    // Connect in background
+    auto future = QtConcurrent::run([connectionName]() -> QPair<bool, QString> {
+        DatabaseConnection *conn = ConnectionManager::instance().getConnection(connectionName);
+        if (conn && conn->connect()) {
+            return QPair<bool, QString>(true, QString());
+        }
+        return QPair<bool, QString>(false, conn ? conn->getLastError() : "Connection not found");
+    });
+
+    auto *watcher = new QFutureWatcher<QPair<bool, QString>>(this);
+    connect(watcher, &QFutureWatcher<QPair<bool, QString>>::finished, this, [this, watcher, connectionItem, connectionName]() {
+        auto result = watcher->result();
+
+        if (result.first) {
+            // Stop spinner and remove placeholder
+            if (connectionItem->rowCount() > 0) {
+                auto *placeholder = dynamic_cast<TreeItem*>(connectionItem->child(0));
+                if (placeholder) {
+                    stopSpinner(placeholder);
+                }
+            }
+            connectionItem->removeRows(0, connectionItem->rowCount());
+
+            // Load structure
+            DatabaseConnection *conn = ConnectionManager::instance().getConnection(connectionName);
+            if (conn) {
+                connections[connectionName] = conn;
+                loadConnectionStructure(connectionItem, conn);
+                connectionItem->setLoaded(true);
+            }
+
+            emit connectionFinished(connectionName, true, QString());
+        } else {
+            // Stop spinner and show error in placeholder
+            if (connectionItem->rowCount() > 0) {
+                auto *placeholder = dynamic_cast<TreeItem*>(connectionItem->child(0));
+                if (placeholder) {
+                    stopSpinner(placeholder);
+                    placeholder->setText("Connection failed");
+                }
+            }
+            emit connectionFinished(connectionName, false, result.second);
+        }
+
+        watcher->deleteLater();
+    });
+    watcher->setFuture(future);
 }
 
 void ConnectionTreeModel::removeConnection(const QString &connectionName) {
@@ -230,6 +324,88 @@ void ConnectionTreeModel::loadFolderContents(TreeItem *folderItem) {
     folderItem->setLoaded(true);
 }
 
+void ConnectionTreeModel::loadFolderContentsAsync(TreeItem *folderItem) {
+    if (!folderItem || folderItem->isLoaded()) {
+        return;
+    }
+
+    emit folderLoadingStarted(folderItem);
+
+    // Change placeholder text and start animated spinner
+    if (folderItem->rowCount() > 0) {
+        auto *placeholder = dynamic_cast<TreeItem*>(folderItem->child(0));
+        if (placeholder) {
+            placeholder->setText("Loading...");
+            startSpinner(placeholder);
+        }
+    }
+
+    // Get connection info
+    QString connectionName = folderItem->getConnectionName();
+    QString databaseName = folderItem->getDatabaseName();
+    QString schemaName = folderItem->getSchemaName();
+    TreeItemType type = folderItem->getType();
+
+    // Load in background
+    auto future = QtConcurrent::run([this, connectionName, databaseName, schemaName, type]() -> QStringList {
+        DatabaseConnection *connection = connections.value(connectionName);
+        if (!connection) {
+            return QStringList();
+        }
+
+        if (type == TreeItemType::TablesFolder) {
+            return connection->getTables(schemaName, databaseName);
+        } else if (type == TreeItemType::ViewsFolder) {
+            return connection->getViews(schemaName, databaseName);
+        } else if (type == TreeItemType::SequencesFolder) {
+            return connection->getSequences(schemaName);
+        }
+        return QStringList();
+    });
+
+    auto *watcher = new QFutureWatcher<QStringList>(this);
+    connect(watcher, &QFutureWatcher<QStringList>::finished, this, [this, watcher, folderItem, connectionName, databaseName, schemaName, type]() {
+        QStringList items = watcher->result();
+
+        // Stop spinner and remove placeholder
+        if (folderItem->rowCount() > 0) {
+            auto *placeholder = dynamic_cast<TreeItem*>(folderItem->child(0));
+            if (placeholder) {
+                stopSpinner(placeholder);
+            }
+        }
+        folderItem->removeRows(0, folderItem->rowCount());
+
+        // Add items
+        for (const QString &itemName : items) {
+            TreeItem *newItem = nullptr;
+
+            if (type == TreeItemType::TablesFolder) {
+                newItem = new TreeItem(itemName, TreeItemType::Table);
+                newItem->setIcon(getIconForType(TreeItemType::Table));
+            } else if (type == TreeItemType::ViewsFolder) {
+                newItem = new TreeItem(itemName, TreeItemType::View);
+                newItem->setIcon(getIconForType(TreeItemType::View));
+            } else if (type == TreeItemType::SequencesFolder) {
+                newItem = new TreeItem(itemName, TreeItemType::Sequence);
+                newItem->setIcon(getIconForType(TreeItemType::Sequence));
+            }
+
+            if (newItem) {
+                newItem->setConnectionName(connectionName);
+                newItem->setDatabaseName(databaseName);
+                newItem->setSchemaName(schemaName);
+                folderItem->appendRow(newItem);
+            }
+        }
+
+        folderItem->setLoaded(true);
+        emit folderLoadingFinished(folderItem);
+        watcher->deleteLater();
+    });
+    watcher->setFuture(future);
+}
+
 QIcon ConnectionTreeModel::getIconForDatabaseType(DatabaseType type) {
     switch (type) {
         case DatabaseType::SQLite:
@@ -263,5 +439,30 @@ QIcon ConnectionTreeModel::getIconForType(TreeItemType type) {
             return QIcon(":/icons/assets/icons/sequence.svg");
         default:
             return QIcon();
+    }
+}
+
+void ConnectionTreeModel::startSpinner(TreeItem *item) {
+    if (!item || spinningItems.contains(item)) {
+        return;
+    }
+
+    spinningItems[item] = true;
+    item->setIcon(spinnerIcon->getIcon());
+
+    if (!spinnerIcon->isRunning()) {
+        spinnerIcon->start();
+    }
+}
+
+void ConnectionTreeModel::stopSpinner(TreeItem *item) {
+    if (!item) {
+        return;
+    }
+
+    spinningItems.remove(item);
+
+    if (spinningItems.isEmpty()) {
+        spinnerIcon->stop();
     }
 }

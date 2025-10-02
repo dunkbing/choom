@@ -8,6 +8,7 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include <QVBoxLayout>
+#include <QQuickWidget>
 #include "../core/query_executor.h"
 
 class TableViewer : public QWidget {
@@ -16,7 +17,8 @@ class TableViewer : public QWidget {
 public:
     explicit TableViewer(QWidget *parent = nullptr);
 
-    void loadTableData(const QString &connectionName, const QString &tableName);
+    void loadTableData(const QString &connectionName, const QString &tableName,
+                       const QString &databaseName = QString(), const QString &schemaName = QString());
     void displayQueryResult(const QueryResult &result);
 
 signals:
@@ -30,6 +32,8 @@ private slots:
 private:
     void setupUI();
     void updatePaginationInfo();
+    void showLoadingSpinner();
+    void hideLoadingSpinner();
 
     QTableView *tableView;
     QStandardItemModel *tableModel;
@@ -39,6 +43,7 @@ private:
     QPushButton *nextButton;
     QSpinBox *pageSpinBox;
     QLabel *pageLabel;
+    QQuickWidget *loadingSpinner;
 
     QueryExecutor *queryExecutor;
     QString currentConnectionName;

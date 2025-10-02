@@ -8,6 +8,7 @@ set(CMAKE_AUTORCC ON)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Set Qt path - update this to match your Qt installation
 if(NOT DEFINED CMAKE_PREFIX_PATH)
@@ -20,8 +21,8 @@ if(NOT DEFINED CMAKE_PREFIX_PATH)
     endif()
 endif()
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Sql Concurrent Svg)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Sql Concurrent Svg)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Sql Concurrent Svg Quick QuickWidgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Sql Concurrent Svg Quick QuickWidgets)
 
 set(PROJECT_SOURCES
         src/main.cpp
@@ -41,6 +42,8 @@ set(PROJECT_SOURCES
         src/ui/welcome_widget.h
         src/ui/connection_dialog.cpp
         src/ui/connection_dialog.h
+        src/ui/spinner_icon.cpp
+        src/ui/spinner_icon.h
 
         # Database
         src/database/database_connection.cpp
@@ -100,6 +103,8 @@ target_link_libraries(dbclient PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(dbclient PRIVATE Qt${QT_VERSION_MAJOR}::Sql)
 target_link_libraries(dbclient PRIVATE Qt${QT_VERSION_MAJOR}::Concurrent)
 target_link_libraries(dbclient PRIVATE Qt${QT_VERSION_MAJOR}::Svg)
+target_link_libraries(dbclient PRIVATE Qt${QT_VERSION_MAJOR}::Quick)
+target_link_libraries(dbclient PRIVATE Qt${QT_VERSION_MAJOR}::QuickWidgets)
 
 # Link macOS frameworks if building for Apple
 if(APPLE)
