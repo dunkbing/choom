@@ -217,7 +217,12 @@ void MacOSTitleBar::setupToolbar(MainWindow *mainWindow) {
         nsWindow.titlebarAppearsTransparent = YES;
         [nsWindow setStyleMask:[nsWindow styleMask] | NSWindowStyleMaskFullSizeContentView];
         nsWindow.titleVisibility = NSWindowTitleHidden;
-        nsWindow.backgroundColor = [NSColor clearColor];
+
+        // Set titlebar background color to match app background (#1e1e1e)
+        nsWindow.backgroundColor = [NSColor colorWithRed:0x1e/255.0
+                                                   green:0x1e/255.0
+                                                    blue:0x1e/255.0
+                                                   alpha:1.0];
 
         // Make Qt aware of the custom titlebar height for layout calculations
         mainWindow->setContentsMargins(0, 0, 0, 0);

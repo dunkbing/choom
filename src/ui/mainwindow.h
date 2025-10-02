@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <QTreeView>
-#include <QStackedWidget>
+#include <QTabWidget>
 #include <QToolButton>
 #include <QVBoxLayout>
 #include <QSplitter>
@@ -27,23 +27,23 @@ private slots:
     void addNewConnection();
     void onTreeItemDoubleClicked(const QModelIndex &index);
     void onTreeItemContextMenu(const QPoint &pos);
-    void openSQLEditor();
+    void openSQLEditor(const QString &connectionName = QString(), const QString &database = QString(), const QString &schema = QString());
 
 private:
     void setupUI();
     void setupSidebar();
     void loadSavedConnections();
+    void openTableInTab(const QString &connectionName, const QString &tableName);
+    int findTab(const QString &tabName);
 
     QSplitter *splitter;
     QWidget *sidebarWidget;
     QVBoxLayout *sidebarLayout;
     QTreeView *connectionTree;
     ConnectionTreeModel *treeModel;
-    QStackedWidget *contentStack;
+    QTabWidget *tabWidget;
     TitleBar *titleBar;
     WelcomeWidget *welcomeWidget;
-    TableViewer *tableViewer;
-    SQLEditor *sqlEditor;
 };
 
 #endif // MAINWINDOW_H

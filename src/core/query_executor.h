@@ -9,6 +9,16 @@
 #include <QFuture>
 #include <QtConcurrent>
 
+struct ConnectionInfo {
+    QString driverName;
+    QString databaseName;
+    QString hostName;
+    QString userName;
+    QString password;
+    int port;
+    QString connectOptions;
+};
+
 struct QueryResult {
     bool success;
     QString errorMessage;
@@ -34,7 +44,8 @@ signals:
     void queryError(const QString &error);
 
 private:
-    static QueryResult runQuery(const QString &connectionName, const QString &query);
+    static ConnectionInfo getConnectionInfo(const QString &connectionName);
+    static QueryResult runQuery(const ConnectionInfo &connInfo, const QString &query);
 };
 
 #endif // QUERY_EXECUTOR_H

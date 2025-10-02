@@ -11,6 +11,9 @@
 #include <QToolButton>
 #include <QSqlQuery>
 #include <QMenu>
+#include <QTabBar>
+#include <QMouseEvent>
+#include <QEvent>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     // Initialize connection storage
@@ -56,20 +59,19 @@ void MainWindow::setupUI() {
     mainLayout->addWidget(titleBar);
 #endif
 
-    // Create the content stacked widget
-    contentStack = new QStackedWidget(this);
-    contentStack->setObjectName("contentStack");
-    contentStack->setContentsMargins(0, 0, 0, 0);
+    // Create tab widget
+    tabWidget = new QTabWidget(this);
+    tabWidget->setTabsClosable(true);
+    tabWidget->setMovable(true);
+    tabWidget->setDocumentMode(true);
+    tabWidget->tabBar()->setCursor(Qt::PointingHandCursor);
+    connect(tabWidget, &QTabWidget::tabCloseRequested, this, [this](int index) {
+        QWidget *widget = tabWidget->widget(index);
+        tabWidget->removeTab(index);
+        widget->deleteLater();
+    });
 
-    // Create content widget
-    auto *contentWidget = new QWidget();
-    contentWidget->setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
-    auto *contentLayout = new QVBoxLayout(contentWidget);
-    contentLayout->setContentsMargins(0, 0, 0, 0);
-    contentLayout->setSpacing(0);
-    contentLayout->addWidget(contentStack);
-
-    mainLayout->addWidget(contentWidget);
+    mainLayout->addWidget(tabWidget);
 
     // Create splitter for resizable sidebar
     splitter = new QSplitter(Qt::Horizontal, this);
@@ -89,19 +91,22 @@ void MainWindow::setupUI() {
     // window props
     resize(1024, 768);
 
-    // dark theme
+    // Modern dark theme with better contrast
     QString darkStyle = R"(
         QMainWindow, QWidget {
-            background-color: #24262e;
-            color: #ffffff;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
         }
         QLineEdit {
-            background-color: #36383e;
-            color: #ffffff;
-            border: 1px solid #444;
+            background-color: #2d2d30;
+            color: #cccccc;
+            border: 1px solid #3e3e42;
             padding: 8px;
             border-radius: 4px;
-            selection-background-color: #4d78cc;
+            selection-background-color: #264f78;
+        }
+        QLineEdit:focus {
+            border: 1px solid #007acc;
         }
         QToolButton {
             background-color: transparent;
@@ -109,23 +114,32 @@ void MainWindow::setupUI() {
             border-radius: 4px;
             padding: 5px;
             text-align: left;
+            color: #cccccc;
         }
         QToolButton:hover {
-            background-color: #454750;
+            background-color: #2a2d2e;
         }
         QToolButton:pressed, QToolButton:checked {
-            background-color: #303238;
+            background-color: #094771;
         }
         #sidebarWidget {
-            background-color: #24262e;
+            background-color: #252526;
             border: none;
         }
         QTreeView {
             border: none;
-            background-color: #24262e;
+            background-color: #252526;
+            color: #cccccc;
+            outline: none;
+        }
+        QTreeView::item:hover {
+            background-color: #2a2d2e;
+        }
+        QTreeView::item:selected {
+            background-color: #094771;
         }
         QSplitter::handle {
-            background-color: #444;
+            background-color: #3e3e42;
             width: 1px;
         }
         QSplitter::handle:horizontal {
@@ -135,25 +149,68 @@ void MainWindow::setupUI() {
             height: 2px;
         }
         QSplitter::handle:hover {
-            background-color: #666;
+            background-color: #007acc;
         }
-        #urlDisplay {
-            background-color: #36383e;
+        QTabWidget::pane {
+            border: none;
+            background-color: #1e1e1e;
+            top: -1px;
+        }
+        QTabBar {
+            background-color: #252526;
+            border-bottom: 1px solid #3e3e42;
+        }
+        QTabBar::tab {
+            background-color: transparent;
+            color: #969696;
+            padding: 10px 20px;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin: 0px;
+            min-width: 80px;
+        }
+        QTabBar::tab:selected {
+            background-color: #1e1e1e;
             color: #ffffff;
-            border: 1px solid #444;
-            border-radius: 4px;
-            padding: 8px;
-            font-size: 12px;
+            border-bottom: 2px solid #007acc;
         }
-        .TabButton {
-            text-align: left;
-            padding-left: 10px;
-            border-radius: 4px;
-            min-height: 25px;
-            max-height: 25px;
+        QTabBar::close-button {
+            image: url(:/icons/assets/close.svg);
+            subcontrol-position: right;
+            subcontrol-origin: padding;
+            padding: 4px;
         }
-        .TabButton[selected="true"] {
-            background-color: #454750;
+        QTabBar::close-button:hover {
+            background-color: #3e3e42;
+            border-radius: 3px;
+        }
+        QPushButton {
+            background-color: #0e639c;
+            color: #ffffff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 2px;
+        }
+        QPushButton:hover {
+            background-color: #1177bb;
+        }
+        QPushButton:pressed {
+            background-color: #0d5689;
+        }
+        QTableView {
+            background-color: #1e1e1e;
+            alternate-background-color: #252526;
+            color: #cccccc;
+            gridline-color: #3e3e42;
+            border: none;
+        }
+        QHeaderView::section {
+            background-color: #252526;
+            color: #cccccc;
+            padding: 5px;
+            border: none;
+            border-right: 1px solid #3e3e42;
+            border-bottom: 1px solid #3e3e42;
         }
         QScrollArea {
             border: none;
@@ -162,21 +219,43 @@ void MainWindow::setupUI() {
         QScrollArea > QWidget > QWidget {
             background: transparent;
         }
+        QScrollBar:vertical {
+            background: #1e1e1e;
+            width: 14px;
+            border: none;
+        }
+        QScrollBar::handle:vertical {
+            background: #424242;
+            border-radius: 7px;
+            min-height: 20px;
+        }
+        QScrollBar::handle:vertical:hover {
+            background: #4e4e4e;
+        }
+        QScrollBar:horizontal {
+            background: #1e1e1e;
+            height: 14px;
+            border: none;
+        }
+        QScrollBar::handle:horizontal {
+            background: #424242;
+            border-radius: 7px;
+            min-width: 20px;
+        }
+        QScrollBar::handle:horizontal:hover {
+            background: #4e4e4e;
+        }
+        QScrollBar::add-line, QScrollBar::sub-line {
+            border: none;
+            background: none;
+        }
     )";
 
     setStyleSheet(darkStyle);
 
-    // Initialize content widgets
+    // Initialize welcome widget as first tab
     welcomeWidget = new WelcomeWidget(this);
-    tableViewer = new TableViewer(this);
-    sqlEditor = new SQLEditor(this);
-
-    contentStack->addWidget(welcomeWidget);
-    contentStack->addWidget(tableViewer);
-    contentStack->addWidget(sqlEditor);
-
-    // Show welcome screen by default
-    contentStack->setCurrentWidget(welcomeWidget);
+    tabWidget->addTab(welcomeWidget, "Welcome");
 
     // shortcuts
     auto *newConnShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_T), this);
@@ -221,6 +300,7 @@ void MainWindow::setupSidebar() {
     connectionTree->setAnimated(true);
     connectionTree->setExpandsOnDoubleClick(false);
     connectionTree->setContextMenuPolicy(Qt::CustomContextMenu);
+    connectionTree->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     connect(connectionTree, &QTreeView::doubleClicked, this, &MainWindow::onTreeItemDoubleClicked);
     connect(connectionTree, &QTreeView::customContextMenuRequested, this, &MainWindow::onTreeItemContextMenu);
@@ -259,9 +339,6 @@ void MainWindow::addNewConnection() {
                 // Add to tree
                 treeModel->addConnection(conn);
 
-                // Set SQL editor context
-                sqlEditor->setDatabaseContext(conn->getConnectionName());
-
                 QMessageBox::information(this, "Success",
                     QString("Connected to '%1' successfully!").arg(config.name));
             } else {
@@ -281,15 +358,14 @@ void MainWindow::onTreeItemDoubleClicked(const QModelIndex &index) {
     if (!item) return;
 
     if (item->getType() == TreeItemType::Table) {
-        // Load table data
+        // Load table data in a new tab
         QString connectionName = item->getConnectionName();
         QString tableName = item->text();
 
         // Get the actual database connection name to use
         DatabaseConnection *conn = ConnectionManager::instance().getConnection(connectionName);
         if (conn && conn->isConnected()) {
-            tableViewer->loadTableData(conn->getConnectionName(), tableName);
-            contentStack->setCurrentWidget(tableViewer);
+            openTableInTab(conn->getConnectionName(), tableName);
         }
     }
 }
@@ -316,8 +392,7 @@ void MainWindow::onTreeItemContextMenu(const QPoint &pos) {
                 // Set context based on item type
                 QString database = item->getDatabaseName();
                 QString schema = item->getSchemaName();
-                sqlEditor->setDatabaseContext(conn->getConnectionName(), database, schema);
-                contentStack->setCurrentWidget(sqlEditor);
+                openSQLEditor(conn->getConnectionName(), database, schema);
             }
         });
     }
@@ -362,8 +437,55 @@ void MainWindow::onTreeItemContextMenu(const QPoint &pos) {
     contextMenu.exec(connectionTree->viewport()->mapToGlobal(pos));
 }
 
-void MainWindow::openSQLEditor() {
-    contentStack->setCurrentWidget(sqlEditor);
+void MainWindow::openSQLEditor(const QString &connectionName, const QString &database, const QString &schema) {
+    // Create tab name
+    QString tabName = "SQL Editor";
+    if (!database.isEmpty()) {
+        tabName += " - " + database;
+    } else if (!schema.isEmpty()) {
+        tabName += " - " + schema;
+    } else if (!connectionName.isEmpty()) {
+        tabName += " - " + connectionName;
+    }
+
+    // Check if tab already exists
+    int existingTab = findTab(tabName);
+    if (existingTab >= 0) {
+        tabWidget->setCurrentIndex(existingTab);
+        return;
+    }
+
+    // Create new SQL editor tab
+    auto *sqlEditor = new SQLEditor(this);
+    sqlEditor->setDatabaseContext(connectionName, database, schema);
+    int tabIndex = tabWidget->addTab(sqlEditor, tabName);
+    tabWidget->setCurrentIndex(tabIndex);
+}
+
+void MainWindow::openTableInTab(const QString &connectionName, const QString &tableName) {
+    QString tabName = tableName;
+
+    // Check if tab already exists
+    int existingTab = findTab(tabName);
+    if (existingTab >= 0) {
+        tabWidget->setCurrentIndex(existingTab);
+        return;
+    }
+
+    // Create new table viewer tab
+    auto *tableViewer = new TableViewer(this);
+    tableViewer->loadTableData(connectionName, tableName);
+    int tabIndex = tabWidget->addTab(tableViewer, tabName);
+    tabWidget->setCurrentIndex(tabIndex);
+}
+
+int MainWindow::findTab(const QString &tabName) {
+    for (int i = 0; i < tabWidget->count(); ++i) {
+        if (tabWidget->tabText(i) == tabName) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 void MainWindow::toggleSidebar() {
@@ -380,13 +502,11 @@ void MainWindow::loadSavedConnections() {
 
     if (savedConnections.isEmpty()) {
         qDebug() << "No saved connections found";
-        contentStack->setCurrentWidget(welcomeWidget);
         return;
     }
 
     qDebug() << "Loading" << savedConnections.size() << "saved connections";
 
-    bool firstConnectionSet = false;
     for (const ConnectionConfig &config : savedConnections) {
         // Add connection to manager
         ConnectionManager::instance().addConnection(config);
@@ -398,12 +518,6 @@ void MainWindow::loadSavedConnections() {
                 qDebug() << "Successfully connected to:" << config.name;
                 // Add to tree
                 treeModel->addConnection(conn);
-
-                // Set SQL editor context for the first successfully connected connection
-                if (!firstConnectionSet) {
-                    sqlEditor->setDatabaseContext(conn->getConnectionName());
-                    firstConnectionSet = true;
-                }
             } else {
                 qWarning() << "Failed to connect to saved connection:" << config.name
                           << "-" << conn->getLastError();
@@ -411,8 +525,4 @@ void MainWindow::loadSavedConnections() {
         }
     }
 
-    // Show welcome screen if no connections loaded successfully
-    if (treeModel->rowCount() == 0) {
-        contentStack->setCurrentWidget(welcomeWidget);
-    }
 }
