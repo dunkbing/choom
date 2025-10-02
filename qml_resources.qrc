@@ -1,6 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>qml/RoundedWebView.qml</file>
-        <file>qml/TabsList.qml</file>
-    </qresource>
-</RCC>

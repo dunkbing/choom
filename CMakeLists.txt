@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(browser VERSION 0.1 LANGUAGES CXX)
+project(dbclient VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -9,30 +9,61 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets WebEngineWidgets Svg QuickWidgets Quick)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets WebEngineWidgets Svg QuickWidgets Quick)
+# Set Qt path - update this to match your Qt installation
+if(NOT DEFINED CMAKE_PREFIX_PATH)
+    if(APPLE)
+        set(CMAKE_PREFIX_PATH "$ENV{HOME}/Qt/6.9.2/macos")
+    elseif(WIN32)
+        set(CMAKE_PREFIX_PATH "C:/Qt/6.9.2/msvc2019_64")
+    else()
+        set(CMAKE_PREFIX_PATH "$ENV{HOME}/Qt/6.9.2/gcc_64")
+    endif()
+endif()
+
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Sql Concurrent Svg)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Sql Concurrent Svg)
 
 set(PROJECT_SOURCES
         src/main.cpp
-        src/mainwindow.cpp
-        src/mainwindow.h
-        src/tab.h
-        src/tab.cpp
-        src/title_bar.cpp
-        src/title_bar.h
-        src/utils.h
-        src/utils.cpp
+
+        # UI
+        src/ui/mainwindow.cpp
+        src/ui/mainwindow.h
+        src/ui/title_bar.cpp
+        src/ui/title_bar.h
+        src/ui/connection_tree_model.cpp
+        src/ui/connection_tree_model.h
+        src/ui/table_viewer.cpp
+        src/ui/table_viewer.h
+        src/ui/sql_editor.cpp
+        src/ui/sql_editor.h
+        src/ui/welcome_widget.cpp
+        src/ui/welcome_widget.h
+        src/ui/connection_dialog.cpp
+        src/ui/connection_dialog.h
+
+        # Database
+        src/database/database_connection.cpp
+        src/database/database_connection.h
+        src/database/sqlite_connection.cpp
+        src/database/sqlite_connection.h
+        src/database/mysql_connection.cpp
+        src/database/mysql_connection.h
+        src/database/postgres_connection.cpp
+        src/database/postgres_connection.h
+        src/database/connection_manager.cpp
+        src/database/connection_manager.h
+
+        # Core
+        src/core/query_executor.cpp
+        src/core/query_executor.h
+        src/core/utils.cpp
+        src/core/utils.h
+        src/core/connection_storage.cpp
+        src/core/connection_storage.h
+
         resources.qrc
-        qml_resources.qrc
-        src/command_palette.cpp
-        src/command_palette.h
         src/macos_titlebar.h
-        src/webview_container.cpp
-        src/webview_container.h
-        src/qmlwebview.cpp
-        src/qmlwebview.h
-        src/qmltabswidget.cpp
-        src/qmltabswidget.h
 )
 
 # Add macOS-specific files
@@ -49,40 +80,39 @@ if(APPLE)
 endif()
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(browser
+    qt_add_executable(dbclient
             MANUAL_FINALIZATION
             ${PROJECT_SOURCES}
     )
 else()
     if(ANDROID)
-        add_library(browser SHARED
+        add_library(dbclient SHARED
                 ${PROJECT_SOURCES}
         )
     else()
-        add_executable(browser
+        add_executable(dbclient
                 ${PROJECT_SOURCES}
         )
     endif()
 endif()
 
-target_link_libraries(browser PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(browser PRIVATE Qt${QT_VERSION_MAJOR}::WebEngineWidgets)
-target_link_libraries(browser PRIVATE Qt${QT_VERSION_MAJOR}::Svg)
-target_link_libraries(browser PRIVATE Qt${QT_VERSION_MAJOR}::QuickWidgets)
-target_link_libraries(browser PRIVATE Qt${QT_VERSION_MAJOR}::Quick)
+target_link_libraries(dbclient PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(dbclient PRIVATE Qt${QT_VERSION_MAJOR}::Sql)
+target_link_libraries(dbclient PRIVATE Qt${QT_VERSION_MAJOR}::Concurrent)
+target_link_libraries(dbclient PRIVATE Qt${QT_VERSION_MAJOR}::Svg)
 
 # Link macOS frameworks if building for Apple
 if(APPLE)
     find_library(APPKIT AppKit)
     find_library(FOUNDATION Foundation)
-    target_link_libraries(browser PRIVATE ${APPKIT} ${FOUNDATION})
+    target_link_libraries(dbclient PRIVATE ${APPKIT} ${FOUNDATION})
 endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 if(${QT_VERSION} VERSION_LESS 6.1.0)
-    set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.browser)
+    set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.dbclient)
 endif()
-set_target_properties(browser PROPERTIES
+set_target_properties(dbclient PROPERTIES
         ${BUNDLE_ID_OPTION}
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
@@ -91,12 +121,12 @@ set_target_properties(browser PROPERTIES
 )
 
 include(GNUInstallDirs)
-install(TARGETS browser
+install(TARGETS dbclient
         BUNDLE DESTINATION .
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(browser)
+    qt_finalize_executable(dbclient)
 endif()

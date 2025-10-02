@@ -9,5 +9,15 @@
         <file>assets/reddit.png</file>
         <file>assets/x.png</file>
         <file>assets/notion.png</file>
+        <file>assets/icons/connection.svg</file>
+        <file>assets/icons/database.svg</file>
+        <file>assets/icons/schema.svg</file>
+        <file>assets/icons/table.svg</file>
+        <file>assets/icons/view.svg</file>
+        <file>assets/icons/sequence.svg</file>
+        <file>assets/icons/folder.svg</file>
+        <file>assets/icons/sqlite.svg</file>
+        <file>assets/icons/mysql.svg</file>
+        <file>assets/icons/postgres.svg</file>
     </qresource>
 </RCC>

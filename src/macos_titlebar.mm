@@ -3,8 +3,8 @@
 //
 
 #include "macos_titlebar.h"
-#include "mainwindow.h"
-#include "utils.h"
+#include "ui/mainwindow.h"
+#include "core/utils.h"
 
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
@@ -102,39 +102,8 @@ NSWindow *getNSWindowFromMainWindow(MainWindow *mainWindow) {
 
 @end
 
-// Objective-C++ class for button actions
-@interface MacOSButtonActions : NSObject
-@property(nonatomic, assign) MainWindow *mainWindow;
-
-- (void)backButtonClicked:(id)sender;
-- (void)forwardButtonClicked:(id)sender;
-- (void)reloadButtonClicked:(id)sender;
-@end
-
-@implementation MacOSButtonActions
-- (void)backButtonClicked:(id)sender {
-    if (self.mainWindow) {
-        self.mainWindow->goBack();
-    }
-}
-
-- (void)forwardButtonClicked:(id)sender {
-    if (self.mainWindow) {
-        self.mainWindow->goForward();
-    }
-}
-
-- (void)reloadButtonClicked:(id)sender {
-    if (self.mainWindow) {
-        self.mainWindow->reload();
-    }
-}
-@end
-
-// Static storage for Objective-C objects
-namespace {
-    MacOSButtonActions *buttonActions = nil;
-}
+// Database client doesn't need browser navigation buttons
+// Removed MacOSButtonActions class
 
 // Helper to create a button with icon or text
 HoverButton *createToolbarButton(SEL action, id target, NSRect frame, NSString *fallbackText,
@@ -191,6 +160,48 @@ HoverButton *createToolbarButton(SEL action, id target, NSRect frame, NSString *
     return button;
 }
 
+@interface SidebarToggleTarget : NSObject
+@property (nonatomic, assign) MainWindow *mainWindow;
+- (void)toggleSidebar:(id)sender;
+@end
+
+@implementation SidebarToggleTarget
+- (void)toggleSidebar:(id)sender {
+    if (_mainWindow) {
+        _mainWindow->toggleSidebar();
+    }
+}
+@end
+
+NSButton* MacOSTitleBar::addSidebarToggleButton(MainWindow *mainWindow) {
+    NSWindow *nsWindow = getNSWindowFromMainWindow(mainWindow);
+    if (!nsWindow) {
+        return nil;
+    }
+
+    // Create target for button action
+    static SidebarToggleTarget *target = [[SidebarToggleTarget alloc] init];
+    target.mainWindow = mainWindow;
+
+    // Create sidebar toggle button
+    NSRect frame = NSMakeRect(0, 0, 30, 30);
+    HoverButton *toggleButton = createToolbarButton(
+        @selector(toggleSidebar:),
+        target,
+        frame,
+        @"≡",
+        @"sidebar.left"
+    );
+
+    // Add button to the leading side of the titlebar
+    NSTitlebarAccessoryViewController *accessoryController = [[NSTitlebarAccessoryViewController alloc] init];
+    accessoryController.view = toggleButton;
+    accessoryController.layoutAttribute = NSLayoutAttributeLeading;
+    [nsWindow addTitlebarAccessoryViewController:accessoryController];
+
+    return toggleButton;
+}
+
 void MacOSTitleBar::setupToolbar(MainWindow *mainWindow) {
     // Setup delayed initialization to ensure the window is fully created
     QTimer::singleShot(100, [mainWindow]() {
@@ -208,53 +219,11 @@ void MacOSTitleBar::setupToolbar(MainWindow *mainWindow) {
         nsWindow.titleVisibility = NSWindowTitleHidden;
         nsWindow.backgroundColor = [NSColor clearColor];
 
-        // Get close button and title bar view
-        NSButton *closeButton = [nsWindow standardWindowButton:NSWindowCloseButton];
-        if (!closeButton) {
-            qWarning() << "Could not get close button";
-            return;
-        }
-
-        NSView *titleBarView = closeButton.superview;
-        if (!titleBarView) {
-            qWarning() << "Could not get title bar view";
-            return;
-        }
-
-        // Initialize button handler
-        if (!buttonActions) {
-            buttonActions = [[MacOSButtonActions alloc] init];
-        }
-        buttonActions.mainWindow = mainWindow;
-
-        // Calculate positions based on titleBarView size
-        CGFloat titleBarHeight = titleBarView.frame.size.height;
-        CGFloat buttonHeight = titleBarHeight * 0.7;
-        CGFloat buttonY = (titleBarHeight - buttonHeight) / 2;
-        CGFloat currentX = 70; // Starting X position (adjust as needed)
-
-        // Create back button
-        HoverButton *backButton = createToolbarButton(
-            @selector(backButtonClicked:), buttonActions,
-            NSMakeRect(currentX, buttonY, buttonHeight, buttonHeight), @"◀", @"chevron.backward");
-        [titleBarView addSubview:backButton];
-        currentX += buttonHeight + 5;
-
-        // Create forward button
-        HoverButton *forwardButton = createToolbarButton(
-            @selector(forwardButtonClicked:), buttonActions,
-            NSMakeRect(currentX, buttonY, buttonHeight, buttonHeight), @"▶", @"chevron.forward");
-        [titleBarView addSubview:forwardButton];
-        currentX += buttonHeight + 5;
-
-        // Create reload button
-        HoverButton *reloadButton = createToolbarButton(
-            @selector(reloadButtonClicked:), buttonActions,
-            NSMakeRect(currentX, buttonY, buttonHeight, buttonHeight), @"↻", @"arrow.clockwise");
-        [titleBarView addSubview:reloadButton];
-
         // Make Qt aware of the custom titlebar height for layout calculations
         mainWindow->setContentsMargins(0, 0, 0, 0);
+
+        // Add sidebar toggle button
+        MacOSTitleBar::addSidebarToggleButton(mainWindow);
     });
 }
 
