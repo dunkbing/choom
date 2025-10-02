@@ -4,7 +4,7 @@
 #include <QString>
 #include <QVector>
 #include <QSqlDatabase>
-#include "../database/database_connection.h"
+#include "database/database_connection.h"
 
 class ConnectionStorage {
 public:

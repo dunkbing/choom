@@ -1,7 +1,7 @@
-#include "connection_manager.h"
-#include "sqlite_connection.h"
-#include "mysql_connection.h"
-#include "postgres_connection.h"
+#include "database/connection_manager.h"
+#include "database/sqlite_connection.h"
+#include "database/mysql_connection.h"
+#include "database/postgres_connection.h"
 
 ConnectionManager& ConnectionManager::instance() {
     static ConnectionManager instance;

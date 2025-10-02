@@ -1,4 +1,4 @@
-#include "database_connection.h"
+#include "database/database_connection.h"
 #include <QUuid>
 
 DatabaseConnection::DatabaseConnection(const ConnectionConfig &config, QObject *parent)

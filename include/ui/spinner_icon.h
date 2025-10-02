@@ -28,7 +28,6 @@ private:
     QTimer *timer;
     QQuickView *quickView;
     QQuickItem *spinnerItem;
-    int rotation;
 };
 
 #endif // SPINNER_ICON_H

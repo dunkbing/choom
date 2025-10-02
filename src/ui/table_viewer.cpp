@@ -1,4 +1,4 @@
-#include "table_viewer.h"
+#include "ui/table_viewer.h"
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QFutureWatcher>

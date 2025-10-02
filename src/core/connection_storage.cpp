@@ -1,4 +1,4 @@
-#include "connection_storage.h"
+#include "core/connection_storage.h"
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QStandardPaths>

@@ -10,11 +10,7 @@
 
 #include "title_bar.h"
 #include "connection_tree_model.h"
-#include "table_viewer.h"
-#include "sql_editor.h"
 #include "welcome_widget.h"
-#include "connection_dialog.h"
-#include "../database/connection_manager.h"
 
 class MainWindow final : public QMainWindow {
     Q_OBJECT

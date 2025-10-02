@@ -1,7 +1,11 @@
-#include "mainwindow.h"
-#include "../macos_titlebar.h"
-#include "../core/utils.h"
-#include "../core/connection_storage.h"
+#include "ui/mainwindow.h"
+#include "macos_titlebar.h"
+#include "core/utils.h"
+#include "connection_manager.h"
+#include "core/connection_storage.h"
+#include "connection_dialog.h"
+#include "sql_editor.h"
+#include "table_viewer.h"
 #include <QApplication>
 #include <QLabel>
 #include <QMessageBox>
@@ -67,6 +71,7 @@ void MainWindow::setupUI() {
     tabWidget->setTabsClosable(true);
     tabWidget->setMovable(true);
     tabWidget->setDocumentMode(true);
+    tabWidget->tabBar()->setDrawBase(false);
     tabWidget->tabBar()->setCursor(Qt::PointingHandCursor);
     connect(tabWidget, &QTabWidget::tabCloseRequested, this, [this](int index) {
         QWidget *widget = tabWidget->widget(index);
@@ -157,11 +162,11 @@ void MainWindow::setupUI() {
         QTabWidget::pane {
             border: none;
             background-color: #1e1e1e;
-            top: -1px;
+            top: 0px;
         }
         QTabBar {
             background-color: #252526;
-            border-bottom: 1px solid #3e3e42;
+            border: none;
         }
         QTabBar::tab {
             background-color: transparent;
@@ -270,14 +275,14 @@ void MainWindow::setupSidebar() {
     sidebarWidget = new QWidget(this);
     sidebarWidget->setObjectName("sidebarWidget");
     sidebarWidget->setMinimumWidth(200);
-    sidebarWidget->setMaximumWidth(600);
+    sidebarWidget->setMaximumWidth(500);
 
     // Create sidebar layout
     sidebarLayout = new QVBoxLayout(sidebarWidget);
     sidebarWidget->setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
 
 #ifdef Q_OS_MACOS
-    sidebarLayout->setContentsMargins(10, 40, 10, 10);
+    sidebarLayout->setContentsMargins(10, 10, 10, 10);
 #else
     sidebarLayout->setContentsMargins(10, 10, 10, 10);
 #endif

@@ -1,5 +1,5 @@
-#include "connection_dialog.h"
-#include "../database/connection_manager.h"
+#include "ui/connection_dialog.h"
+#include "database/connection_manager.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGroupBox>

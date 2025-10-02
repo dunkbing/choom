@@ -4,7 +4,7 @@
 #include <QStandardItemModel>
 #include <QStandardItem>
 #include <QTimer>
-#include "../database/database_connection.h"
+#include "database/database_connection.h"
 #include "spinner_icon.h"
 
 enum class TreeItemType {

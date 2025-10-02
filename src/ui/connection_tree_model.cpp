@@ -1,10 +1,15 @@
-#include "connection_tree_model.h"
-#include "../database/connection_manager.h"
+#include "ui/connection_tree_model.h"
+#include "database/connection_manager.h"
 #include <QIcon>
 #include <QtConcurrent>
 #include <QFutureWatcher>
 #include <QPainter>
 #include <QPixmap>
+#include <QVariant>
+
+namespace {
+constexpr int kSpinnerOriginalIconRole = Qt::UserRole + 1024;
+}
 
 ConnectionTreeModel::ConnectionTreeModel(QObject *parent)
     : QStandardItemModel(parent) {
@@ -58,6 +63,8 @@ void ConnectionTreeModel::connectToDatabase(TreeItem *connectionItem) {
     QString connectionName = connectionItem->getConnectionName();
     emit connectionStarted(connectionName);
 
+    startSpinner(connectionItem);
+
     // Update placeholder to show connecting with animated spinner
     if (connectionItem->rowCount() > 0) {
         auto *placeholder = dynamic_cast<TreeItem*>(connectionItem->child(0));
@@ -98,6 +105,7 @@ void ConnectionTreeModel::connectToDatabase(TreeItem *connectionItem) {
                 connectionItem->setLoaded(true);
             }
 
+            stopSpinner(connectionItem);
             emit connectionFinished(connectionName, true, QString());
         } else {
             // Stop spinner and show error in placeholder
@@ -108,6 +116,7 @@ void ConnectionTreeModel::connectToDatabase(TreeItem *connectionItem) {
                     placeholder->setText("Connection failed");
                 }
             }
+            stopSpinner(connectionItem);
             emit connectionFinished(connectionName, false, result.second);
         }
 
@@ -447,6 +456,10 @@ void ConnectionTreeModel::startSpinner(TreeItem *item) {
         return;
     }
 
+    if (!item->data(kSpinnerOriginalIconRole).isValid()) {
+        item->setData(item->icon(), kSpinnerOriginalIconRole);
+    }
+
     spinningItems[item] = true;
     item->setIcon(spinnerIcon->getIcon());
 
@@ -461,6 +474,12 @@ void ConnectionTreeModel::stopSpinner(TreeItem *item) {
     }
 
     spinningItems.remove(item);
+
+    const QVariant originalIcon = item->data(kSpinnerOriginalIconRole);
+    if (originalIcon.isValid()) {
+        item->setIcon(originalIcon.value<QIcon>());
+        item->setData(QVariant(), kSpinnerOriginalIconRole);
+    }
 
     if (spinningItems.isEmpty()) {
         spinnerIcon->stop();

@@ -1,4 +1,4 @@
-#include "sqlite_connection.h"
+#include "database/sqlite_connection.h"
 #include <QSqlQuery>
 
 SQLiteConnection::SQLiteConnection(const ConnectionConfig &config, QObject *parent)

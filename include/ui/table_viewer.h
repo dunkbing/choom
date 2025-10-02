@@ -9,7 +9,7 @@
 #include <QSpinBox>
 #include <QVBoxLayout>
 #include <QQuickWidget>
-#include "../core/query_executor.h"
+#include "core/query_executor.h"
 
 class TableViewer : public QWidget {
     Q_OBJECT

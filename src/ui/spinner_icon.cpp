@@ -1,4 +1,4 @@
-#include "spinner_icon.h"
+#include "ui/spinner_icon.h"
 #include <QQmlEngine>
 #include <QQmlComponent>
 #include <QPainter>
@@ -6,10 +6,10 @@
 #include <QImage>
 
 SpinnerIcon::SpinnerIcon(QObject *parent)
-    : QObject(parent), rotation(0) {
+    : QObject(parent) {
 
     timer = new QTimer(this);
-    timer->setInterval(100);  // Update every 100ms
+    timer->setInterval(33);  // ~30 FPS for smoother animation
     connect(timer, &QTimer::timeout, this, &SpinnerIcon::updateIcon);
 
     // Create QML spinner

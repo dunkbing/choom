@@ -1,5 +1,5 @@
-#include "query_executor.h"
-#include "../database/connection_manager.h"
+#include "core/query_executor.h"
+#include "database/connection_manager.h"
 #include <QElapsedTimer>
 #include <QSqlError>
 #include <QThread>

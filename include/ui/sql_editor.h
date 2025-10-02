@@ -10,7 +10,7 @@
 #include <QLabel>
 #include <QSplitter>
 #include <QSyntaxHighlighter>
-#include "../core/query_executor.h"
+#include "core/query_executor.h"
 
 class SQLHighlighter : public QSyntaxHighlighter {
     Q_OBJECT

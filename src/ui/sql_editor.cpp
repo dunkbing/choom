@@ -1,4 +1,4 @@
-#include "sql_editor.h"
+#include "ui/sql_editor.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QShortcut>

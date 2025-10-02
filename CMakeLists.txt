@@ -24,49 +24,39 @@ endif()
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Sql Concurrent Svg Quick QuickWidgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Sql Concurrent Svg Quick QuickWidgets)
 
+# Collect all header files automatically
+file(GLOB_RECURSE PROJECT_HEADERS "include/*.h")
+
 set(PROJECT_SOURCES
         src/main.cpp
 
         # UI
         src/ui/mainwindow.cpp
-        src/ui/mainwindow.h
         src/ui/title_bar.cpp
-        src/ui/title_bar.h
         src/ui/connection_tree_model.cpp
-        src/ui/connection_tree_model.h
         src/ui/table_viewer.cpp
-        src/ui/table_viewer.h
         src/ui/sql_editor.cpp
-        src/ui/sql_editor.h
         src/ui/welcome_widget.cpp
-        src/ui/welcome_widget.h
         src/ui/connection_dialog.cpp
-        src/ui/connection_dialog.h
         src/ui/spinner_icon.cpp
-        src/ui/spinner_icon.h
 
         # Database
         src/database/database_connection.cpp
-        src/database/database_connection.h
         src/database/sqlite_connection.cpp
-        src/database/sqlite_connection.h
         src/database/mysql_connection.cpp
-        src/database/mysql_connection.h
         src/database/postgres_connection.cpp
-        src/database/postgres_connection.h
         src/database/connection_manager.cpp
-        src/database/connection_manager.h
 
         # Core
         src/core/query_executor.cpp
-        src/core/query_executor.h
         src/core/utils.cpp
-        src/core/utils.h
         src/core/connection_storage.cpp
-        src/core/connection_storage.h
 
+        # Resources
         resources.qrc
-        src/macos_titlebar.h
+
+        # Headers (automatically collected)
+        ${PROJECT_HEADERS}
 )
 
 # Add macOS-specific files
@@ -98,6 +88,14 @@ else()
         )
     endif()
 endif()
+
+# Add include directories
+target_include_directories(dbclient PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/database
+    ${CMAKE_SOURCE_DIR}/include/ui
+    ${CMAKE_SOURCE_DIR}/include/core
+)
 
 target_link_libraries(dbclient PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(dbclient PRIVATE Qt${QT_VERSION_MAJOR}::Sql)

@@ -6,7 +6,6 @@
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QStringList>
-#include <memory>
 
 enum class DatabaseType {
     SQLite,

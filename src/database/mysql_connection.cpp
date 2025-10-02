@@ -1,4 +1,4 @@
-#include "mysql_connection.h"
+#include "database/mysql_connection.h"
 #include <QSqlQuery>
 
 MySQLConnection::MySQLConnection(const ConnectionConfig &config, QObject *parent)

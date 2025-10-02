@@ -1,4 +1,4 @@
-#include "postgres_connection.h"
+#include "database/postgres_connection.h"
 #include <QSqlQuery>
 
 PostgresConnection::PostgresConnection(const ConnectionConfig &config, QObject *parent)

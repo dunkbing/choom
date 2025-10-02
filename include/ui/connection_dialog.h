@@ -9,7 +9,7 @@
 #include <QLabel>
 #include <QStackedWidget>
 #include <QFormLayout>
-#include "../database/database_connection.h"
+#include "database/database_connection.h"
 
 class ConnectionDialog : public QDialog {
     Q_OBJECT

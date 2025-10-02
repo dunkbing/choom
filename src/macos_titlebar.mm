@@ -9,11 +9,7 @@
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
-#include <QDebug>
-#include <QLabel>
-#include <QLineEdit>
 #include <QTimer>
-#include <QVBoxLayout>
 #include <QWindow>
 
 // Helper function to get NSWindow from a Qt MainWindow
@@ -45,6 +41,24 @@ NSWindow *getNSWindowFromMainWindow(MainWindow *mainWindow) {
     }
 
     return nsWindow;
+}
+
+static void updateTitlebarAppearance(MainWindow *mainWindow) {
+    if (!mainWindow) {
+        return;
+    }
+
+    NSWindow *nsWindow = getNSWindowFromMainWindow(mainWindow);
+    if (!nsWindow) {
+        return;
+    }
+
+    nsWindow.titleVisibility = NSWindowTitleVisible;
+    nsWindow.titlebarAppearsTransparent = YES;
+    nsWindow.backgroundColor = [NSColor colorWithRed:0x25 / 255.0
+                                               green:0x25 / 255.0
+                                                blue:0x26 / 255.0
+                                               alpha:1.0];
 }
 
 // Custom button class that implements hover tracking
@@ -213,19 +227,7 @@ void MacOSTitleBar::setupToolbar(MainWindow *mainWindow) {
             return;
         }
 
-        // Configure window for custom title bar
-        nsWindow.titlebarAppearsTransparent = YES;
-        [nsWindow setStyleMask:[nsWindow styleMask] | NSWindowStyleMaskFullSizeContentView];
-        nsWindow.titleVisibility = NSWindowTitleHidden;
-
-        // Set titlebar background color to match app background (#1e1e1e)
-        nsWindow.backgroundColor = [NSColor colorWithRed:0x1e/255.0
-                                                   green:0x1e/255.0
-                                                    blue:0x1e/255.0
-                                                   alpha:1.0];
-
-        // Make Qt aware of the custom titlebar height for layout calculations
-        mainWindow->setContentsMargins(0, 0, 0, 0);
+        updateTitlebarAppearance(mainWindow);
 
         // Add sidebar toggle button
         MacOSTitleBar::addSidebarToggleButton(mainWindow);
@@ -239,9 +241,7 @@ void MacOSTitleBar::hideWindowTitleBar(MainWindow *window) {
         NSView *nativeView = reinterpret_cast<NSView *>(window->winId());
         NSWindow *nativeWindow = [nativeView window];
 
-        [nativeWindow setStyleMask:[nativeWindow styleMask] | NSWindowStyleMaskFullSizeContentView |
-                                   NSWindowTitleHidden];
-        [nativeWindow setTitlebarAppearsTransparent:YES];
+        updateTitlebarAppearance(window);
         [nativeWindow center];
     });
 }
