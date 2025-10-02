@@ -10,6 +10,8 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QScrollArea>
+#include <QScrollBar>
+#include <QPointer>
 #include <QShortcut>
 #include <QHBoxLayout>
 #include <QToolButton>
@@ -21,6 +23,57 @@
 #include <QProgressDialog>
 #include <QTimer>
 #include <QtConcurrent>
+
+namespace {
+
+class ScrollbarVisibilityFilter : public QObject {
+public:
+    ScrollbarVisibilityFilter(QScrollBar *bar, QTimer *timer, QObject *parent = nullptr)
+        : QObject(parent), scrollBar(bar), hideTimer(timer) {}
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override {
+        Q_UNUSED(watched);
+
+        if (!scrollBar || !hideTimer) {
+            return QObject::eventFilter(watched, event);
+        }
+
+        switch (event->type()) {
+            case QEvent::Enter:
+            case QEvent::MouseMove:
+            case QEvent::Wheel:
+            case QEvent::ScrollPrepare:
+            case QEvent::Scroll:
+                showScrollbar();
+                break;
+            case QEvent::Leave:
+                scheduleHide();
+                break;
+            default:
+                break;
+        }
+
+        return QObject::eventFilter(watched, event);
+    }
+
+private:
+    void showScrollbar() {
+        if (!scrollBar) return;
+        scrollBar->show();
+        hideTimer->start();
+    }
+
+    void scheduleHide() {
+        if (!hideTimer) return;
+        hideTimer->start();
+    }
+
+    QPointer<QScrollBar> scrollBar;
+    QTimer *hideTimer;
+};
+
+} // namespace
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     // Initialize connection storage
@@ -192,34 +245,6 @@ void MainWindow::setupUI() {
             background-color: #3e3e42;
             border-radius: 3px;
         }
-        QPushButton {
-            background-color: #0e639c;
-            color: #ffffff;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 2px;
-        }
-        QPushButton:hover {
-            background-color: #1177bb;
-        }
-        QPushButton:pressed {
-            background-color: #0d5689;
-        }
-        QTableView {
-            background-color: #1e1e1e;
-            alternate-background-color: #252526;
-            color: #cccccc;
-            gridline-color: #3e3e42;
-            border: none;
-        }
-        QHeaderView::section {
-            background-color: #252526;
-            color: #cccccc;
-            padding: 5px;
-            border: none;
-            border-right: 1px solid #3e3e42;
-            border-bottom: 1px solid #3e3e42;
-        }
         QScrollArea {
             border: none;
             background: transparent;
@@ -229,7 +254,7 @@ void MainWindow::setupUI() {
         }
         QScrollBar:vertical {
             background: #1e1e1e;
-            width: 14px;
+            width: 8px;
             border: none;
         }
         QScrollBar::handle:vertical {
@@ -242,7 +267,7 @@ void MainWindow::setupUI() {
         }
         QScrollBar:horizontal {
             background: #1e1e1e;
-            height: 14px;
+            height: 8px;
             border: none;
         }
         QScrollBar::handle:horizontal {
@@ -282,7 +307,7 @@ void MainWindow::setupSidebar() {
     sidebarWidget->setAttribute(Qt::WA_ContentsMarginsRespectsSafeArea, false);
 
 #ifdef Q_OS_MACOS
-    sidebarLayout->setContentsMargins(10, 10, 10, 10);
+    sidebarLayout->setContentsMargins(10, 5, 10, 10);
 #else
     sidebarLayout->setContentsMargins(10, 10, 10, 10);
 #endif
@@ -309,6 +334,52 @@ void MainWindow::setupSidebar() {
     connectionTree->setExpandsOnDoubleClick(false);
     connectionTree->setContextMenuPolicy(Qt::CustomContextMenu);
     connectionTree->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    if (auto *scrollBar = connectionTree->verticalScrollBar()) {
+        scrollBar->setVisible(false);
+
+        auto *hideTimer = new QTimer(connectionTree);
+        hideTimer->setInterval(1200);
+        hideTimer->setSingleShot(true);
+
+        auto showScrollbar = [scrollBar, hideTimer]() {
+            if (!scrollBar) {
+                return;
+            }
+            scrollBar->setVisible(true);
+            hideTimer->start();
+        };
+
+        QObject::connect(scrollBar, &QScrollBar::valueChanged, connectionTree, [showScrollbar](int) {
+            showScrollbar();
+        });
+
+        QObject::connect(scrollBar, &QScrollBar::actionTriggered, connectionTree, [showScrollbar](int) {
+            showScrollbar();
+        });
+
+        QObject::connect(scrollBar, &QScrollBar::sliderPressed, connectionTree, [scrollBar, hideTimer]() {
+            if (!scrollBar) {
+                return;
+            }
+            scrollBar->setVisible(true);
+            hideTimer->stop();
+        });
+
+        QObject::connect(scrollBar, &QScrollBar::sliderReleased, connectionTree, [hideTimer]() {
+            hideTimer->start();
+        });
+
+        QObject::connect(hideTimer, &QTimer::timeout, connectionTree, [scrollBar]() {
+            if (!scrollBar || scrollBar->isSliderDown()) {
+                return;
+            }
+            scrollBar->setVisible(false);
+        });
+
+        auto *filter = new ScrollbarVisibilityFilter(scrollBar, hideTimer, connectionTree);
+        connectionTree->viewport()->installEventFilter(filter);
+    }
 
     connect(connectionTree, &QTreeView::doubleClicked, this, &MainWindow::onTreeItemDoubleClicked);
     connect(connectionTree, &QTreeView::customContextMenuRequested, this, &MainWindow::onTreeItemContextMenu);
